@@ -1,0 +1,7 @@
+LOAD_BALANCER_APT_PACKAGES:
+  - haproxy
+  - letsencrypt
+  - inotify-tools
+
+# Path of file used as indicator that haproxy needs to be reloaded.
+LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
