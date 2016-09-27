@@ -16,8 +16,10 @@ update_cert()
             domain="${domain%/}"
             cd /etc/letsencrypt/live/"$domain"
             # Haproxy expects the certificate and the private key concatenated
-            # together to a single .pem file.
-            cat fullchain.pem privkey.pem > "{{ LOAD_BALANCER_CERTS_DIR }}/$domain.pem"
+            # together to a single .pem file.  We lock the certs directory to
+            # protect against haproxy reading a half-written certificate.
+            flock {{ LOAD_BALANCER_CERTS_DIR }} cat fullchain.pem privkey.pem \
+                  > "{{ LOAD_BALANCER_CERTS_DIR }}/$domain.pem"
             ;;
     esac
 }

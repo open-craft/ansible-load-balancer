@@ -44,13 +44,17 @@ To add a new backend, perform the following steps:
         letsencrypt certonly \
             -d <domain> [ -d <domain> ... ] \
             --email <email> \
-            --authenticator standalone
+            --authenticator standalone \
             --standalone-supported-challenges http-01 \
             --http-01-port 8080 \
             --non-interactive \
             --agree-tos \
-            --keep
+            --keep \
             --expand
+
+   If you are obtaining the certificate just for testing purposes, also add
+
+            --staging
 
    to obtain an SSL certificate for your domains.  The server will take care of
    renewing the certificate automatically.

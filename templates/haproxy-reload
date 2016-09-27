@@ -4,6 +4,8 @@
 # configuration file and reloads it.  The script is run via cron every minute.
 # This ensures that haproxy is reloaded at most once a minute.
 
+set -e
+
 # Name of file that indicates haproxy needs to be reloaded.
 HAPROXY_RELOAD_FILE="{{ LOAD_BALANCER_RELOAD_FILE }}"
 
@@ -13,13 +15,13 @@ if [ -f "$HAPROXY_RELOAD_FILE" -o "$1" = "-f" ]; then
         echo "# This file is auto-generated from the fragments in /etc/haproxy/conf.d."
         echo "# Don't edit it directly, since your changes will be overwritten."
         # Exclude editor backup files
-        cat {{ LOAD_BALANCER_CONF_DIR }}/*[^~]
+        flock -n {{ LOAD_BALANCER_CONF_DIR }} cat {{ LOAD_BALANCER_CONF_DIR }}/*[^~]
     } > /etc/haproxy/haproxy.cfg
     {
         echo "# This file is auto-generated from the fragments in /etc/haproxy/backends."
         echo "# Don't edit it directly, since your changes will be overwritten."
         # Exclude editor backup files
-        cat {{ LOAD_BALANCER_BACKENDS_DIR }}/*[^~]
+        flock -n {{ LOAD_BALANCER_BACKENDS_DIR }} cat {{ LOAD_BALANCER_BACKENDS_DIR }}/*[^~]
     } > {{ LOAD_BALANCER_BACKEND_MAP }}
-    systemctl reload haproxy
+    flock -n {{ LOAD_BALANCER_CERTS_DIR }} systemctl reload haproxy
 fi
