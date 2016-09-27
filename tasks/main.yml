@@ -54,7 +54,7 @@
   command: systemctl {{ item }} haproxy-config-watcher
   with_items:
     - enable
-    - start
+    - restart
 
 - name: set up cron job to reload haproxy when needed
   cron:
