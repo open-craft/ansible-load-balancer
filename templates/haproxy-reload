@@ -13,13 +13,13 @@ if [ -f "$HAPROXY_RELOAD_FILE" -o "$1" = "-f" ]; then
         echo "# This file is auto-generated from the fragments in /etc/haproxy/conf.d."
         echo "# Don't edit it directly, since your changes will be overwritten."
         # Exclude editor backup files
-        cat /etc/haproxy/conf.d/*[^~]
+        cat {{ LOAD_BALANCER_CONF_DIR }}/*[^~]
     } > /etc/haproxy/haproxy.cfg
     {
         echo "# This file is auto-generated from the fragments in /etc/haproxy/backends."
         echo "# Don't edit it directly, since your changes will be overwritten."
         # Exclude editor backup files
-        cat /etc/haproxy/backends/*[^~]
-    } > /etc/haproxy/backend.map
+        cat {{ LOAD_BALANCER_BACKENDS_DIR }}/*[^~]
+    } > {{ LOAD_BALANCER_BACKEND_MAP }}
     systemctl reload haproxy
 fi

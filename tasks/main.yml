@@ -10,22 +10,22 @@
     state: directory
     mode: "0700"
   with_items:
-    - /etc/haproxy/certs
-    - /etc/haproxy/conf.d
-    - /etc/haproxy/backends
-    - /etc/letsencrypt/archive
+    - "{{ LOAD_BALANCER_CERTS_DIR }}"
+    - "{{ LOAD_BALANCER_CONF_DIR }}"
+    - "{{ LOAD_BALANCER_BACKENDS_DIR }}"
+    - "{{ LETSENCRYPT_ARCHIVE_DIR }}"
 
 - name: copy haproxy configuration main section
   template:
     src: haproxy.cfg
-    dest: /etc/haproxy/conf.d/00-main
+    dest: "{{ LOAD_BALANCER_CONF_DIR }}/00-main"
 
 - name: create placeholder file for backend map
   copy:
     content: |
       # This directory contains files mapping domain names to backend names.  Each
       # line contains a domain name and a backend name separated by whitespace.
-    dest: /etc/haproxy/backends/00-main
+    dest: "{{ LOAD_BALANCER_BACKENDS_DIR }}/00-main"
 
 # Haproxy refuses to start when there are no valid SSL certificates in the
 # /etc/haproxy/certs directory, so we copy a bogus cert there.  The snakeoil
@@ -34,7 +34,7 @@
 - name: copy snakeoil certificate into haproxy config directory
   shell: >
     cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key \
-        > /etc/haproxy/certs/ssl-cert-snakeoil.pem
+        > {{ LOAD_BALANCER_CERTS_DIR }}/ssl-cert-snakeoil.pem
 
 - name: copy helper scipts
   template:
@@ -67,7 +67,7 @@
   cron:
     name: "Renew SSL certificate using the letsencrypt client"
     # We shouldn't need to pass any parameters to "letsencrypt renew", since it
-    # reuses the parameters issued when a certificate was issued for the last time.
+    # reuses the parameters used when a certificate was issued for the last time.
     # However, not passing in the port results in letsencrypt complaining about
     # port 443 being in use.  (Seems to be a bug in certbot.)
     job: letsencrypt renew --standalone-supported-challenges http-01 --http-01-port 8080

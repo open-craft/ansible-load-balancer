@@ -4,9 +4,6 @@
 # configuration files and triggers a reload of haproxy.  The actual reload
 # is performed by the haproxy-reload script.
 
-# Name of file that indicates haproxy needs to be reloaded.
-HAPROXY_RELOAD_FILE="{{ LOAD_BALANCER_RELOAD_FILE }}"
-
 update_cert()
 {
     # This is called when a new certificate was obtained by letsencrypt, either
@@ -15,26 +12,27 @@ update_cert()
     # fullchain.pem, to be closed before taking action.
     case "$2" in
         fullchain*)
-            domain="${1#/etc/letsencrypt/archive/}"
+            domain="${1#{{ LETSENCRYPT_ARCHIVE_DIR }}/}"
             domain="${domain%/}"
             cd /etc/letsencrypt/live/"$domain"
             # Haproxy expects the certificate and the private key concatenated
             # together to a single .pem file.
-            cat fullchain.pem privkey.pem > "/etc/haproxy/certs/$domain.pem"
-            touch "$HAPROXY_RELOAD_FILE"
+            cat fullchain.pem privkey.pem > "{{ LOAD_BALANCER_CERTS_DIR }}/$domain.pem"
             ;;
     esac
 }
 
-# We exclude haproxy.cfg and backend.map from being watched since they are
-# regenerated whenever a restart is requested.  Otherwise, each restart would
-# immediately trigger another restart.
+# It is important to note that haproxy.conf and backend.map are not contained
+# in any of the watched directories, since these files are regenerated upon
+# restart.  Otherwise each restart immediately triggers another restart.
 inotifywait -e close_write -e moved_to -m -q -r \
-            --exclude haproxy.cfg --exclude backend.map \
-            /etc/letsencrypt/archive /etc/haproxy |
+            {{ LOAD_BALANCER_CERTS_DIR }} {{ LOAD_BALANCER_CONF_DIR }} \
+            {{ LOAD_BALANCER_BACKENDS_DIR }} {{ LETSENCRYPT_ARCHIVE_DIR }} |
     while read path event file; do
         case "$path" in
-            /etc/letsencrypt/archive/*) update_cert "$path" "$file";;
-            /etc/haproxy/*) touch "$HAPROXY_RELOAD_FILE";;
+            {{ LETSENCRYPT_ARCHIVE_DIR }}/*)
+                update_cert "$path" "$file";;
+            {{ LOAD_BALANCER_CERTS_DIR }}/*|{{ LOAD_BALANCER_CONF_DIR }}/*|{{ LOAD_BALANCER_BACKENDS_DIR }}/*)
+                touch {{ LOAD_BALANCER_RELOAD_FILE }};;
         esac
     done
