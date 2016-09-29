@@ -44,6 +44,7 @@
   with_items:
     - haproxy-config-watcher
     - haproxy-reload
+    - manage_certs.py
 
 - name: copy config watcher systemd service file
   template:
