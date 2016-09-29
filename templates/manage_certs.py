@@ -10,6 +10,7 @@ removes them and disables the associated Let's Encrypt renewal configuration.
 """
 
 import collections
+import json
 import pathlib
 import socket
 import ssl
@@ -21,7 +22,8 @@ SERVER_FQDN = "{{ ansible_fqdn }}"
 HAPROXY_BACKEND_MAP = "{{ LOAD_BALANCER_BACKEND_MAP }}"
 HAPROXY_CERTS_DIR = pathlib.Path("{{ LOAD_BALANCER_CERTS_DIR }}")
 CONTACT_EMAIL = "{{ OPS_EMAIL }}"
-USE_LETSENCRYPT_STAGING = "{{ USE_LETSENCRYPT_STAGING }}"
+LETSENCRYPT_USE_STAGING = json.loads("{{ LETSENCRYPT_USE_STAGING }}".lower())
+LETSENCRYPT_FAKE_CERT = "{{ LETSENCRYPT_FAKE_CERT }}"
 
 
 def get_all_domains():
@@ -41,6 +43,8 @@ def get_ssl_context():
     if not get_ssl_context.ctx:
         get_ssl_context.ctx = ssl.create_default_context()
         get_ssl_context.ctx.load_verify_locations("/etc/ssl/certs/ca-certificates.crt")
+        if LETSENCRYPT_USE_STAGING:
+            get_ssl_context.ctx.load_verify_locations(LETSENCRYPT_FAKE_CERT)
     return get_ssl_context.ctx
 
 get_ssl_context.ctx = None
@@ -77,7 +81,12 @@ def has_valid_dns_record(domain):
     except socket.gaierror:
         return False
     if not has_valid_dns_record.external_ip:
-        has_valid_dns_record.external_ip = socket.gethostbyname(SERVER_FQDN)
+        result = subprocess.run(["host", SERVER_FQDN], stdout=subprocess.PIPE)
+        if result.returncode:
+            # TODO: log error
+            raise Exception("Cannot resolve FQDN to an IP address.")
+        unused, external_ip = result.stdout.strip().rsplit(None, 1)
+        has_valid_dns_record.external_ip = external_ip.decode("ascii")
     return domain_ip == has_valid_dns_record.external_ip
 
 has_valid_dns_record.external_ip = None
@@ -103,7 +112,7 @@ def get_certless_domains(all_domains):
     ]
 
 
-def request_cert(domains, staging=USE_LETSENCRYPT_STAGING):
+def request_cert(domains, staging=LETSENCRYPT_USE_STAGING):
     """Request a new SSL certificate for the listed domains"""
     command = [
         "letsencrypt", "certonly",
@@ -163,7 +172,7 @@ def remove_cert(cert_path):
     cert_path.unlink()
     renewal_config = pathlib.Path("/etc/letsencrypt/renewal", cert_path.stem + ".conf")
     if renewal_config.is_file():
-        renewal_config.rename(renewal_config.with_suffix("disabled"))
+        renewal_config.rename(renewal_config.with_suffix(".disabled"))
 
 
 def clean_up_certs(all_domains):

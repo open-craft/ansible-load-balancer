@@ -16,4 +16,6 @@ LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
 # Whether to use the Let's Encrypt staging server to get certificates.  Enable
 # this for testing to save resources.  The issued certificates won't be
 # accepted by browsers.
-USE_LETSENCRYPT_STAGING: false
+LETSENCRYPT_USE_STAGING: false
+
+LETSENCRYPT_FAKE_CERT: /etc/ssl/certs/letsencrypt-fake-cert.crt

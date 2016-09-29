@@ -36,6 +36,12 @@
     cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key \
         > {{ LOAD_BALANCER_CERTS_DIR }}/ssl-cert-snakeoil.pem
 
+- name: copy letsencrypt staging certificate for testing purposes
+  copy:
+    src: lets-encrypt-fake-cert.crt
+    dest: "{{ LETSENCRYPT_FAKE_CERT }}"
+  when: LETSENCRYPT_USE_STAGING
+
 - name: copy helper scipts
   template:
     src: "{{ item }}"
