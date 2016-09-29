@@ -4,6 +4,15 @@
     state: present
   with_items: "{{ LOAD_BALANCER_APT_PACKAGES }}"
 
+- name: install pip packages
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ LOAD_BALANCER_PIP_PACKAGES }}"
+
+- name: fetch Public Suffix List for TLD extraction
+  command: tldextract -u
+
 - name: create haproxy configuration directories
   file:
     path: "{{ item }}"

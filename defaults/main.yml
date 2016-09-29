@@ -2,12 +2,17 @@ LOAD_BALANCER_APT_PACKAGES:
   - haproxy
   - letsencrypt
   - inotify-tools
+  - python3-dateutil
+
+LOAD_BALANCER_PIP_PACKAGES:
+  - tldextract==2.0.1
 
 LOAD_BALANCER_CERTS_DIR: /etc/haproxy/certs
 LOAD_BALANCER_CONF_DIR: /etc/haproxy/conf.d
 LOAD_BALANCER_BACKENDS_DIR: /etc/haproxy/backends
 LETSENCRYPT_ARCHIVE_DIR: /etc/letsencrypt/archive
 LOAD_BALANCER_BACKEND_MAP: /etc/haproxy/backend.map
+LOAD_BALANCER_CERTS_LIST: /etc/haproxy/domains-with-cert
 
 # Path of file used as indicator that haproxy needs to be reloaded.
 LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload

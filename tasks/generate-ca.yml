@@ -1,0 +1,25 @@
+- name: create directories for CA generation
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+  with_items:
+    - /etc/ssl/ca
+    - /etc/ssl/newcerts
+
+- name: create serial number file
+  copy:
+    content: 01
+    dest: /etc/ssl/CA/serial
+
+- name: create CA database index
+  file:
+    path: /etc/ssl/CA/index.txt
+    state: touch
+
+- name: patch OpenSSL configuration file
+  patch:
+    src: openssl.cnf.patch
+    dest: /etc/ssl/openssl.cnf
+
+openssl req -new -x509 -extensions v3_ca -keyout cakey.pem -out cacert.pem -days 3652
