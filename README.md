@@ -20,7 +20,8 @@ Features
 
 * SSL certificates are managed on the load balancer using the certbot client for
   Let's Encrypt.  ACME challenges for domain verification are routed to
-  certbot's standalone web server.
+  certbot's standalone web server.  Certificate management is fully automatic
+  and transparent to any client.
 
 * Backends for HTTPS connections are chosen based on the Host header of the
   request.  Backends and mappings of domain names to backends can be added
@@ -37,29 +38,9 @@ Adding backends
 To add a new backend, perform the following steps:
 
 1. Create CNAME DNS records for all desired domain names pointing to the load
-   balancing server, and wait for the DNS changes to propagate.
+   balancing server.
 
-2. Log into the load balancing server and run
-
-        letsencrypt certonly \
-            -d <domain> [ -d <domain> ... ] \
-            --email <email> \
-            --authenticator standalone \
-            --standalone-supported-challenges http-01 \
-            --http-01-port 8080 \
-            --non-interactive \
-            --agree-tos \
-            --keep \
-            --expand
-
-   If you are obtaining the certificate just for testing purposes, also add
-
-            --staging
-
-   to obtain an SSL certificate for your domains.  The server will take care of
-   renewing the certificate automatically.
-
-3. Add an haproxy configuration fragment to /etc/haproxy/conf.d/ containing the
+2. Add an haproxy configuration fragment to /etc/haproxy/conf.d/ containing the
    desired backend configuration, e.g.
 
         backend be_example_com
@@ -67,8 +48,9 @@ To add a new backend, perform the following steps:
             stick on req.cook(sessionid)
             server example.com:80 check
 
-4. Add a backend map fragment to /etc/haproxy/backends/, containing lines with
+3. Add a backend map fragment to /etc/haproxy/backends/, containing lines with
    mappings from domain names to backends, e.g.
 
         example.com be_example_com
         www.example.com be_example.com
+
