@@ -70,6 +70,14 @@
     cron_file: haproxy-reload
     user: root
 
+- name: set up cron job for automatic certificate management
+  cron:
+    name: "Request new certificates when needed and remove unused ones"
+    job: /usr/local/sbin/manage_certs.py
+    cron_file: manage-certs
+    minute: "*/5"
+    user: root
+
 - name: set up cron job for certificate renewal
   cron:
     name: "Renew SSL certificate using the letsencrypt client"
