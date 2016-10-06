@@ -10,7 +10,7 @@ set -e
 HAPROXY_RELOAD_FILE="{{ LOAD_BALANCER_RELOAD_FILE }}"
 
 if [ -f "$HAPROXY_RELOAD_FILE" -o "$1" = "-f" ]; then
-    rm "$HAPROXY_RELOAD_FILE"
+    rm -f "$HAPROXY_RELOAD_FILE"
     {
         echo "# This file is auto-generated from the fragments in /etc/haproxy/conf.d."
         echo "# Don't edit it directly, since your changes will be overwritten."

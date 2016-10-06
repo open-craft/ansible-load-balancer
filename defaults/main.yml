@@ -1,3 +1,5 @@
+LOAD_BALANCER_SERVER_IP: "{{ lookup('dig', ansible_host) }}"
+
 LOAD_BALANCER_APT_PACKAGES:
   - haproxy
   - letsencrypt
@@ -19,3 +21,5 @@ LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
 LETSENCRYPT_USE_STAGING: false
 
 LETSENCRYPT_FAKE_CERT: /etc/ssl/certs/letsencrypt-fake-cert.crt
+
+LOAD_BALANCER_MANAGE_CERTS_CONF: /etc/manage_certs.conf

@@ -9,27 +9,21 @@ Let's Encrypt.  It finds unused certificates in the haproxy configuration,
 removes them and disables the associated Let's Encrypt renewal configuration.
 """
 
+import argparse
 import collections
-import json
 import pathlib
 import socket
 import ssl
 import subprocess
+import sys
 
 import OpenSSL.crypto
 
-SERVER_FQDN = "{{ ansible_fqdn }}"
-HAPROXY_BACKEND_MAP = "{{ LOAD_BALANCER_BACKEND_MAP }}"
-HAPROXY_CERTS_DIR = pathlib.Path("{{ LOAD_BALANCER_CERTS_DIR }}")
-CONTACT_EMAIL = "{{ OPS_EMAIL }}"
-LETSENCRYPT_USE_STAGING = json.loads("{{ LETSENCRYPT_USE_STAGING }}".lower())
-LETSENCRYPT_FAKE_CERT = "{{ LETSENCRYPT_FAKE_CERT }}"
 
-
-def get_all_domains():
+def get_all_domains(config):
     """Get a list of all configured domains from the haproxy backend map."""
     domains = collections.OrderedDict()
-    with open(HAPROXY_BACKEND_MAP) as backend_map:
+    with open(config.haproxy_backend_map) as backend_map:
         for line in backend_map:
             line = line.strip()
             if line and not line.startswith("#"):
@@ -38,19 +32,19 @@ def get_all_domains():
     return domains
 
 
-def get_ssl_context():
+def get_ssl_context(config):
     """Return a standard SSL context."""
     if not get_ssl_context.ctx:
         get_ssl_context.ctx = ssl.create_default_context()
         get_ssl_context.ctx.load_verify_locations("/etc/ssl/certs/ca-certificates.crt")
-        if LETSENCRYPT_USE_STAGING:
-            get_ssl_context.ctx.load_verify_locations(LETSENCRYPT_FAKE_CERT)
+        if config.letsencrypt_use_staging and config.letsencrypt_fake_cert is not None:
+            get_ssl_context.ctx.load_verify_locations(config.letsencrypt_fake_cert)
     return get_ssl_context.ctx
 
 get_ssl_context.ctx = None
 
 
-def has_valid_cert(domain, ctx=None):
+def has_valid_cert(config, domain, ctx=None):
     """Verify that localhost serves a valid SSL certificate for the given domain."""
     # The easiest and most reliable way to determin whether we have a valid
     # certificate for a given hostname is to connect to haproxy on port 443 and
@@ -62,7 +56,7 @@ def has_valid_cert(domain, ctx=None):
     # certificates.  This makes sure we only request new certificates when
     # needed.
     if ctx is None:
-        ctx = get_ssl_context()
+        ctx = get_ssl_context(config)
     conn = ctx.wrap_socket(socket.socket(socket.AF_INET), server_hostname=domain)
     try:
         conn.connect(("localhost", 443))
@@ -74,49 +68,28 @@ def has_valid_cert(domain, ctx=None):
         conn.close()
 
 
-def has_valid_dns_record(domain):
+def has_valid_dns_record(config, domain):
     """Determine whether the domain name resolves to this server."""
     try:
         domain_ip = socket.gethostbyname(domain)
     except socket.gaierror:
         return False
-    if not has_valid_dns_record.external_ip:
-        result = subprocess.run(["host", SERVER_FQDN], stdout=subprocess.PIPE)
-        if result.returncode:
-            # TODO: log error
-            raise Exception("Cannot resolve FQDN to an IP address.")
-        unused, external_ip = result.stdout.strip().rsplit(None, 1)
-        has_valid_dns_record.external_ip = external_ip.decode("ascii")
-    return domain_ip == has_valid_dns_record.external_ip
-
-has_valid_dns_record.external_ip = None
+    return domain_ip == config.server_ip
 
 
-def get_all_domains():
-    """Get a list of all configured domains from the haproxy backend map."""
-    domains = collections.OrderedDict()
-    with open(HAPROXY_BACKEND_MAP) as backend_map:
-        for line in backend_map:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                domain, backend = line.split(None, 1)
-                domains[domain] = backend
-    return domains
-
-
-def get_certless_domains(all_domains):
+def get_certless_domains(config, all_domains):
     """Get a list of domain names that need a new certificate."""
     return [
         domain for domain in all_domains
-        if has_valid_dns_record(domain) and not has_valid_cert(domain)
+        if has_valid_dns_record(config, domain) and not has_valid_cert(config, domain)
     ]
 
 
-def request_cert(domains, staging=LETSENCRYPT_USE_STAGING):
+def request_cert(config, domains):
     """Request a new SSL certificate for the listed domains"""
     command = [
         "letsencrypt", "certonly",
-        "--email", CONTACT_EMAIL,
+        "--email", config.contact_email,
         "--authenticator", "standalone",
         "--standalone-supported-challenges", "http-01",
         "--http-01-port", "8080",
@@ -125,7 +98,7 @@ def request_cert(domains, staging=LETSENCRYPT_USE_STAGING):
         "--keep",
         "--expand"
     ]
-    if staging:
+    if config.letsencrypt_use_staging:
         command.append("--staging")
     for domain in domains:
         command += ["-d", domain]
@@ -134,16 +107,16 @@ def request_cert(domains, staging=LETSENCRYPT_USE_STAGING):
     return result.returncode
 
 
-def request_new_certs(all_domains):
+def request_new_certs(config, all_domains):
     """Request new certificates for all domains that need one."""
-    certless_domains = get_certless_domains(all_domains)
+    certless_domains = get_certless_domains(config, all_domains)
     domains_by_backend = {}
     for domain in certless_domains:
         backend = all_domains[domain]
         domains_by_backend.setdefault(backend, []).append(domain)
     for domains in domains_by_backend.values():
         try:
-            request_cert(domains)
+            request_cert(config, domains)
         except Exception as exc:  # pylint: disable=broad-except
             # TODO: log exception
             pass
@@ -175,10 +148,10 @@ def remove_cert(cert_path):
         renewal_config.rename(renewal_config.with_suffix(".disabled"))
 
 
-def clean_up_certs(all_domains):
+def clean_up_certs(config, all_domains):
     """Remove old certificate files from /etc/letsencrypt."""
     active_domains = set(all_domains)
-    for cert_path in HAPROXY_CERTS_DIR.glob("*.pem"):
+    for cert_path in config.haproxy_certs_dir.glob("*.pem"):
         cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert_path.read_bytes())
         try:
             dns_names = set(get_dns_names(cert))
@@ -189,15 +162,31 @@ def clean_up_certs(all_domains):
             # Contains a wildcard.  Not from Let's Encrypt, so we don't touch it.
             continue
         if dns_names.isdisjoint(active_domains):
-            # Certificate does not serve any active domains, so we can remove it
+            # Certificate does not serve any active domains, so we can remove it.
             remove_cert(cert_path)
 
 
-def main():
-    """Perform all operations."""
-    all_domains = get_all_domains()
-    request_new_certs(all_domains)
-    clean_up_certs(all_domains)
+class ArgumentParser(argparse.ArgumentParser):
+    """Argument parser with more useful config file syntax."""
+
+    def convert_arg_line_to_args(self, arg_line):
+        """Treat each space-separated word as a separate argument."""
+        return arg_line.split()
+
+
+def main(args=sys.argv[1:]):
+    """Parse configuration and perform actions."""
+    parser = ArgumentParser(fromfile_prefix_chars="@")
+    parser.add_argument("--server-ip", required=True)
+    parser.add_argument("--haproxy-backend-map", required=True)
+    parser.add_argument("--haproxy-certs-dir", required=True, type=pathlib.Path)
+    parser.add_argument("--contact-email", required=True)
+    parser.add_argument("--letsencrypt-use-staging", action="store_true")
+    parser.add_argument("--letsencrypt-fake-cert")
+    config = parser.parse_args(args)
+    all_domains = get_all_domains(config)
+    request_new_certs(config, all_domains)
+    clean_up_certs(config, all_domains)
 
 
 if __name__ == "__main__":

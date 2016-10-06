@@ -52,6 +52,11 @@
     - haproxy-reload
     - manage_certs.py
 
+- name: copy certificate management configuration file
+  template:
+    src: manage_certs.conf
+    dest: "{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
+
 - name: copy config watcher systemd service file
   template:
     src: haproxy-config-watcher.service
@@ -73,7 +78,7 @@
 - name: set up cron job for automatic certificate management
   cron:
     name: "Request new certificates when needed and remove unused ones"
-    job: /usr/local/sbin/manage_certs.py
+    job: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
     cron_file: manage-certs
     minute: "*/5"
     user: root
