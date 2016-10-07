@@ -11,6 +11,7 @@ removes them and disables the associated Let's Encrypt renewal configuration.
 
 import argparse
 import collections
+import logging.handlers
 import pathlib
 import socket
 import ssl
@@ -18,6 +19,9 @@ import subprocess
 import sys
 
 import OpenSSL.crypto
+
+
+logger = logging.getLogger()
 
 
 def get_all_domains(config):
@@ -79,10 +83,23 @@ def has_valid_dns_record(config, domain):
 
 def get_certless_domains(config, all_domains):
     """Get a list of domain names that need a new certificate."""
-    return [
-        domain for domain in all_domains
-        if has_valid_dns_record(config, domain) and not has_valid_cert(config, domain)
-    ]
+    result = []
+    for domain in all_domains:
+        valid_dns = has_valid_dns_record(config, domain)
+        logger.debug(
+            "The DNS record for the domain %s %s to this server.",
+            domain,
+            "points" if valid_dns else "does not point",
+        )
+        valid_cert = has_valid_cert(config, domain)
+        logger.debug(
+            "This server %s a valid cert for the domain %s.",
+            "has" if valid_cert else "does not have",
+            domain,
+        )
+        if valid_dns and not valid_cert:
+            result.append(domain)
+    return result
 
 
 def request_cert(config, domains):
@@ -102,8 +119,18 @@ def request_cert(config, domains):
         command.append("--staging")
     for domain in domains:
         command += ["-d", domain]
-    result = subprocess.run(command)
-    # TODO: Log output on error, log success message on success
+    result = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    if result.returncode == 0:
+        logger.info(
+            "Successfully obtained a new certificate from Let's Encrypt for these domains:\n    %s",
+            "\n    ".join(domains),
+        )
+    else:
+        logger.error(
+            "Failed to obtain a new certificate for these domains:\n    %s\n%s",
+            "\n    ".join(domains),
+            result.stderr,
+        )
     return result.returncode
 
 
@@ -117,9 +144,12 @@ def request_new_certs(config, all_domains):
     for domains in domains_by_backend.values():
         try:
             request_cert(config, domains)
-        except Exception as exc:  # pylint: disable=broad-except
-            # TODO: log exception
-            pass
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                "An exception occurred when trying to obtain a new certificate for these domains:\n"
+                "    %s",
+                "\n    ".join(domains),
+            )
 
 
 def get_dns_names(cert):
@@ -142,6 +172,11 @@ def get_dns_names(cert):
 
 def remove_cert(cert_path):
     """Delete the certificate pointed to by the path, and deactivate renewal."""
+    logger.info(
+        "The certificate %s is not used by any active backend domain.  "
+        "It is removed and the renewal configuration is disabled.",
+        cert_path,
+    )
     cert_path.unlink()
     renewal_config = pathlib.Path("/etc/letsencrypt/renewal", cert_path.stem + ".conf")
     if renewal_config.is_file():
@@ -155,8 +190,8 @@ def clean_up_certs(config, all_domains):
         cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert_path.read_bytes())
         try:
             dns_names = set(get_dns_names(cert))
-        except ValueError as exc:
-            # TODO: log error, no DNS name found
+        except ValueError:
+            logger.error("Unable to determine domain names for certificate %s.", cert_path)
             continue
         if any("*" in name for name in dns_names):
             # Contains a wildcard.  Not from Let's Encrypt, so we don't touch it.
@@ -183,7 +218,14 @@ def main(args=sys.argv[1:]):
     parser.add_argument("--contact-email", required=True)
     parser.add_argument("--letsencrypt-use-staging", action="store_true")
     parser.add_argument("--letsencrypt-fake-cert")
+    parser.add_argument("--log-level", default="info")
     config = parser.parse_args(args)
+
+    logger.setLevel(config.log_level.upper())
+    handler = logging.handlers.SysLogHandler(address='/dev/log')
+    handler.setFormatter(logging.Formatter("%(filename)s: %(message)s"))
+    logger.addHandler(handler)
+
     all_domains = get_all_domains(config)
     request_new_certs(config, all_domains)
     clean_up_certs(config, all_domains)

@@ -23,3 +23,4 @@ LETSENCRYPT_USE_STAGING: false
 LETSENCRYPT_FAKE_CERT: /etc/ssl/certs/letsencrypt-fake-cert.crt
 
 LOAD_BALANCER_MANAGE_CERTS_CONF: /etc/manage_certs.conf
+LOAD_BALANCER_MANAGE_CERTS_LOG_LEVEL: info
