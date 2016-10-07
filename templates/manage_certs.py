@@ -78,7 +78,7 @@ def has_valid_dns_record(config, domain):
         domain_ip = socket.gethostbyname(domain)
     except socket.gaierror:
         return False
-    return domain_ip == config.server_ip
+    return domain_ip == config.server_ip or domain_ip.split(".", 1)[0] == "127"
 
 
 def get_certless_domains(config, all_domains):
