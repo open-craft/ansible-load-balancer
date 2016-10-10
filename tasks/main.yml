@@ -1,0 +1,109 @@
+- name: install apt packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ LOAD_BALANCER_APT_PACKAGES }}"
+
+- name: create haproxy configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+  with_items:
+    - "{{ LOAD_BALANCER_CERTS_DIR }}"
+    - "{{ LOAD_BALANCER_CONF_DIR }}"
+    - "{{ LOAD_BALANCER_BACKENDS_DIR }}"
+    - "{{ LETSENCRYPT_ARCHIVE_DIR }}"
+
+- name: copy haproxy configuration main section
+  template:
+    src: haproxy.cfg
+    dest: "{{ LOAD_BALANCER_CONF_DIR }}/00-main"
+
+- name: create placeholder file for backend map
+  copy:
+    content: |
+      # This directory contains files mapping domain names to backend names.  Each
+      # line contains a domain name and a backend name separated by whitespace.
+    dest: "{{ LOAD_BALANCER_BACKENDS_DIR }}/00-main"
+
+# Haproxy refuses to start when there are no valid SSL certificates in the
+# /etc/haproxy/certs directory, so we copy a bogus cert there.  The snakeoil
+# certificate will never be used since we used the strict-sni option in the
+# haproxy configuration.
+- name: copy snakeoil certificate into haproxy config directory
+  shell: >
+    cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key \
+        > {{ LOAD_BALANCER_CERTS_DIR }}/ssl-cert-snakeoil.pem
+
+- name: copy letsencrypt staging certificate for testing purposes
+  copy:
+    src: lets-encrypt-fake-cert.crt
+    dest: "{{ LETSENCRYPT_FAKE_CERT }}"
+  when: LETSENCRYPT_USE_STAGING
+
+- name: copy helper scipts
+  template:
+    src: "{{ item }}"
+    dest: "/usr/local/sbin/{{ item }}"
+    mode: "0755"
+  with_items:
+    - haproxy-config-watcher
+    - haproxy-reload
+    - manage_certs.py
+
+- name: copy certificate management configuration file
+  template:
+    src: manage_certs.conf
+    dest: "{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
+
+- name: copy config watcher systemd service file
+  template:
+    src: haproxy-config-watcher.service
+    dest: /lib/systemd/system/haproxy-config-watcher.service
+
+- name: enable and start config watcher
+  command: systemctl {{ item }} haproxy-config-watcher
+  with_items:
+    - enable
+    - restart
+
+- name: set up cron job to reload haproxy when needed
+  cron:
+    name: "Reload haproxy when needed"
+    job: /usr/local/sbin/haproxy-reload
+    cron_file: haproxy-reload
+    user: root
+
+- name: set up cron job for automatic certificate management
+  cron:
+    name: "Request new certificates when needed and remove unused ones"
+    job: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
+    cron_file: manage-certs
+    minute: "*/5"
+    user: root
+
+- name: set up cron job for certificate renewal
+  cron:
+    name: "Renew SSL certificate using the letsencrypt client"
+    # We shouldn't need to pass any parameters to "letsencrypt renew", since it
+    # reuses the parameters used when a certificate was issued for the last time.
+    # However, not passing in the port results in letsencrypt complaining about
+    # port 443 being in use.  (Seems to be a bug in certbot.)
+    job: letsencrypt renew --standalone-supported-challenges http-01 --http-01-port 8080
+    hour: "*/12"
+    minute: "?"
+    cron_file: letsencrypt-renew
+    user: root
+
+- name: open HTTP and HTTPS port on the firewall
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  with_items:
+    - 80
+    - 443
+
+- name: restart haproxy
+  command: /usr/local/sbin/haproxy-reload -f

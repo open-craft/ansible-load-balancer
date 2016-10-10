@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# This script watches for new SSL certificates or changes to the haproxy
+# configuration files and triggers a reload of haproxy.  The actual reload
+# is performed by the haproxy-reload script.
+
+update_cert()
+{
+    # This is called when a new certificate was obtained by letsencrypt, either
+    # due to periodic renewal or because a new domain was added.  Letsencrypt
+    # writes four .pem files for each certificate.  We wait for the last one,
+    # fullchain.pem, to be closed before taking action.
+    case "$2" in
+        fullchain*)
+            domain="${1#{{ LETSENCRYPT_ARCHIVE_DIR }}/}"
+            domain="${domain%/}"
+            cd /etc/letsencrypt/live/"$domain"
+            # Haproxy expects the certificate and the private key concatenated
+            # together to a single .pem file.  We lock the certs directory to
+            # protect against haproxy reading a half-written certificate.
+            flock {{ LOAD_BALANCER_CERTS_DIR }} cat fullchain.pem privkey.pem \
+                  > "{{ LOAD_BALANCER_CERTS_DIR }}/$domain.pem"
+            ;;
+    esac
+}
+
+# It is important to note that haproxy.conf and backend.map are not contained
+# in any of the watched directories, since these files are regenerated upon
+# restart.  Otherwise each restart immediately triggers another restart.
+inotifywait -e close_write -e moved_to -m -q -r \
+            {{ LOAD_BALANCER_CERTS_DIR }} {{ LOAD_BALANCER_CONF_DIR }} \
+            {{ LOAD_BALANCER_BACKENDS_DIR }} {{ LETSENCRYPT_ARCHIVE_DIR }} |
+    while read path event file; do
+        case "$path" in
+            {{ LETSENCRYPT_ARCHIVE_DIR }}/*)
+                update_cert "$path" "$file";;
+            {{ LOAD_BALANCER_CERTS_DIR }}/*|{{ LOAD_BALANCER_CONF_DIR }}/*|{{ LOAD_BALANCER_BACKENDS_DIR }}/*)
+                touch {{ LOAD_BALANCER_RELOAD_FILE }};;
+        esac
+    done
