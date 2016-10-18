@@ -5,6 +5,7 @@ LOAD_BALANCER_APT_PACKAGES:
   - letsencrypt
   - inotify-tools
   - python3-openssl
+  - socat
 
 LOAD_BALANCER_CERTS_DIR: /etc/haproxy/certs
 LOAD_BALANCER_CONF_DIR: /etc/haproxy/conf.d
