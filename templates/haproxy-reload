@@ -23,5 +23,7 @@ if [ -f "$HAPROXY_RELOAD_FILE" -o "$1" = "-f" ]; then
         # Exclude editor backup files
         flock -w 1 {{ LOAD_BALANCER_BACKENDS_DIR }} cat {{ LOAD_BALANCER_BACKENDS_DIR }}/*[^~]
     } > {{ LOAD_BALANCER_BACKEND_MAP }}
+    # Dump server state before restart
+    echo "show servers state" | socat /run/haproxy/admin.sock - > {{ LOAD_BALANCER_STATE_FILE }}
     flock -w 1 {{ LOAD_BALANCER_CERTS_DIR }} systemctl reload haproxy
 fi

@@ -5,6 +5,7 @@ LOAD_BALANCER_APT_PACKAGES:
   - letsencrypt
   - inotify-tools
   - python3-openssl
+  - socat
 
 LOAD_BALANCER_CERTS_DIR: /etc/haproxy/certs
 LOAD_BALANCER_CONF_DIR: /etc/haproxy/conf.d
@@ -14,6 +15,8 @@ LOAD_BALANCER_BACKEND_MAP: /etc/haproxy/backend.map
 
 # Path of file used as indicator that haproxy needs to be reloaded.
 LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
+
+LOAD_BALANCER_STATE_FILE: /tmp/haproxy-server-state
 
 # Whether to use the Let's Encrypt staging server to get certificates.  Enable
 # this for testing to save resources.  The issued certificates won't be
