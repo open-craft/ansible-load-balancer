@@ -34,7 +34,7 @@
 - name: copy snakeoil certificate into haproxy config directory
   shell: >
     cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key \
-        > {{ LOAD_BALANCER_CERTS_DIR }}/ssl-cert-snakeoil.pem
+        > {{ LOAD_BALANCER_CERTS_DIR }}/{{ LOAD_BALANCER_SNAKE_OIL_CERT }}
 
 - name: copy letsencrypt staging certificate for testing purposes
   copy:

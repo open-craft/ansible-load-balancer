@@ -187,6 +187,8 @@ def clean_up_certs(config, all_domains):
     """Remove old certificate files from /etc/letsencrypt."""
     active_domains = set(all_domains)
     for cert_path in config.haproxy_certs_dir.glob("*.pem"):
+        if cert_path.name in config.keep_certificate:
+            continue
         cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert_path.read_bytes())
         try:
             dns_names = set(get_dns_names(cert))
@@ -219,6 +221,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument("--letsencrypt-use-staging", action="store_true")
     parser.add_argument("--letsencrypt-fake-cert")
     parser.add_argument("--log-level", default="info")
+    parser.add_argument("--keep-certificate", action="append")
     config = parser.parse_args(args)
 
     logger.setLevel(config.log_level.upper())
