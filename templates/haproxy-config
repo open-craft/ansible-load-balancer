@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Apply or remove an haproxy configuration fragment.
+
+usage()
+{
+    echo "Usage:"
+    echo "    $0 apply <fragment_name> <config_fragment> <backend_map_fragment>"
+    echo "    $0 remove <fragment_name>"
+    exit 1
+}
+
+case "$1" in
+    apply)
+        if [ "$#" != 4 ]; then
+            usage
+        fi
+        fragment_name="$2"
+        conf_fragment="$3"
+        map_fragment="$4"
+        flock -s "{{ LOAD_BALANCER_CONF_DIR }}" cp "$conf_fragment" "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name"
+        flock -s "{{ LOAD_BALANCER_BACKENDS_DIR }}" cp "$map_fragment" "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
+        ;;
+    remove)
+        if [ "$#" != 2 ]; then
+            usage
+        fi
+        fragment_name="$2"
+        rm -f "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name" "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
+        ;;
+    *)
+        usage
+        ;;
+esac

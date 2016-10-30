@@ -48,6 +48,7 @@
     dest: "/usr/local/sbin/{{ item }}"
     mode: "0755"
   with_items:
+    - haproxy-config
     - haproxy-config-watcher
     - haproxy-reload
     - manage_certs.py

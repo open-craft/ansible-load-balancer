@@ -40,17 +40,25 @@ To add a new backend, perform the following steps:
 1. Create CNAME DNS records for all desired domain names pointing to the load
    balancing server.
 
-2. Add an haproxy configuration fragment to /etc/haproxy/conf.d/ containing the
-   desired backend configuration, e.g.
+2. Create a configuration fragment with the desired backend configuration, e.g.
 
         backend be_example_com
             stick-table type string len 128 size 20k expire 12h
             stick on req.cook(sessionid)
-            server example.com:80 check
+            server srv_example_com example.com:80 check
 
-3. Add a backend map fragment to /etc/haproxy/backends/, containing lines with
-   mappings from domain names to backends, e.g.
+3. Create a backend map fragment containing lines with mappings from domain
+   names to backends, e.g.
 
         example.com be_example_com
         www.example.com be_example.com
 
+4. Copy the configuration and backend map fragments to temporary files on the
+   server and run
+
+        haproxy-config apply <fragment_name> <tmp_config_fragment> <tmp_backend_map_fragment>
+
+   This will replace any fragments with the given fragment name.  To remove the
+   fragment again, use
+
+        haproxy-config remove <fragment_name>
