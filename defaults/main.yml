@@ -1,11 +1,14 @@
 LOAD_BALANCER_SERVER_IP: "{{ lookup('dig', ansible_host) }}"
 
+LOAD_BALANCER_OPS_EMAIL: ops@example.com
+
 LOAD_BALANCER_APT_PACKAGES:
   - haproxy
   - letsencrypt
   - inotify-tools
   - python3-openssl
   - socat
+  - ssl-cert
 
 LOAD_BALANCER_CERTS_DIR: /etc/haproxy/certs
 LOAD_BALANCER_CONF_DIR: /etc/haproxy/conf.d
