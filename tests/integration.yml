@@ -39,12 +39,13 @@
       wait_for:
         path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
         timeout: 360
-    - name: wait for haproxy to be restartet
+    - name: wait for haproxy to be restarted
       wait_for:
         path: "{{ LOAD_BALANCER_RELOAD_FILE }}"
         timeout: 100
         state: absent
     - name: start pydoc as test backend on the server
+      become: False
       command: nohup pydoc -p 5000
       async: 45
       poll: 0
