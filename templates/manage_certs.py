@@ -32,7 +32,7 @@ def get_all_domains(config):
             line = line.strip()
             if line and not line.startswith("#"):
                 domain, backend = line.split(None, 1)
-                domains[domain] = backend
+                domains[domain.lower()] = backend
     return domains
 
 
@@ -161,11 +161,11 @@ def get_dns_names(cert):
             for component in ext._subjectAltNameString().split(", "):  # pylint: disable=protected-access
                 name_type, name = component.split(":", 1)
                 if name_type == "DNS":
-                    dns_names.append(name)
+                    dns_names.append(name.lower())
             return dns_names
     for label, value in cert.get_subject().get_components():
         if label == b"CN":
-            return [value.decode("utf8")]
+            return [value.decode("utf8").lower()]
     raise ValueError("the certificate does not contain a valid Common Name, "
                      "nor valid Subject Alternative Names")
 
