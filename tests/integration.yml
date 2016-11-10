@@ -61,3 +61,9 @@
         path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
         timeout: 360
         state: absent
+    - name: Re-apply the backend configuration
+      command: haproxy-config apply test /tmp/config-fragment /tmp/backend-map-fragment
+    - name: wait for the certificate to be available again
+      wait_for:
+        path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
+        timeout: 360

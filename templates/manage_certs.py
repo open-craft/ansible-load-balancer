@@ -13,6 +13,7 @@ import argparse
 import collections
 import logging.handlers
 import pathlib
+import shutil
 import socket
 import ssl
 import subprocess
@@ -178,9 +179,12 @@ def remove_cert(cert_path):
         cert_path,
     )
     cert_path.unlink()
-    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", cert_path.stem + ".conf")
+    domain = cert_path.stem
+    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", domain + ".conf")
     if renewal_config.is_file():
-        renewal_config.rename(renewal_config.with_suffix(".disabled"))
+        renewal_config.unlink()
+    shutil.rmtree("/etc/letsencrypt/live/" + domain, ignore_errors=True)
+    shutil.rmtree("/etc/letsencrypt/archive/" + domain, ignore_errors=True)
 
 
 def clean_up_certs(config, all_domains):
