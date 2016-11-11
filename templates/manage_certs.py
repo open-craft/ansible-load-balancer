@@ -114,7 +114,8 @@ def request_cert(config, domains):
         "--non-interactive",
         "--agree-tos",
         "--keep",
-        "--expand"
+        "--expand",
+        "--force-renew",
     ]
     if config.letsencrypt_use_staging:
         command.append("--staging")
