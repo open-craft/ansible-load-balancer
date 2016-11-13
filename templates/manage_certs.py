@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# For linting, use `pylint3 --disable=I --reports=n manage_certs.py`.
 """Certificate management for haproxy load balancing server.
 
 This script is intended to be run as a cron job on a frequent basis.  It scans
@@ -22,7 +23,7 @@ import sys
 import OpenSSL.crypto
 
 
-logger = logging.getLogger()
+logger = logging.getLogger()  # pylint: disable=invalid-name
 
 
 def get_all_domains(config):
@@ -51,7 +52,7 @@ get_ssl_context.ctx = None
 
 def has_valid_cert(config, domain, ctx=None):
     """Verify that localhost serves a valid SSL certificate for the given domain."""
-    # The easiest and most reliable way to determin whether we have a valid
+    # The easiest and most reliable way to determine whether we have a valid
     # certificate for a given hostname is to connect to haproxy on port 443 and
     # transfer the hostname we want to enquire about in the SNI extension.
     # Python's SSL implementation verifies whether the certificate is valid and
@@ -208,6 +209,17 @@ def clean_up_certs(config, all_domains):
             remove_cert(cert_path)
 
 
+def configure_logger(logger_, log_level):
+    """Configure the logger to log to the syslog with the given log level."""
+    logger_.setLevel(log_level)
+    handler = logging.handlers.SysLogHandler(address='/dev/log')
+    handler.setFormatter(logging.Formatter("%(filename)s: %(message)s"))
+    logger_.addHandler(handler)
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.ERROR)
+    logger_.addHandler(stderr_handler)
+
+
 class ArgumentParser(argparse.ArgumentParser):
     """Argument parser with more useful config file syntax."""
 
@@ -216,8 +228,8 @@ class ArgumentParser(argparse.ArgumentParser):
         return arg_line.split()
 
 
-def main(args=sys.argv[1:]):
-    """Parse configuration and perform actions."""
+def parse_command_line(args):
+    """Parse the command-line arguments."""
     parser = ArgumentParser(fromfile_prefix_chars="@")
     parser.add_argument("--server-ip", required=True)
     parser.add_argument("--haproxy-backend-map", required=True)
@@ -227,13 +239,13 @@ def main(args=sys.argv[1:]):
     parser.add_argument("--letsencrypt-fake-cert")
     parser.add_argument("--log-level", default="info")
     parser.add_argument("--keep-certificate", action="append")
-    config = parser.parse_args(args)
+    return parser.parse_args(args)
 
-    logger.setLevel(config.log_level.upper())
-    handler = logging.handlers.SysLogHandler(address='/dev/log')
-    handler.setFormatter(logging.Formatter("%(filename)s: %(message)s"))
-    logger.addHandler(handler)
 
+def main(args=sys.argv[1:]):
+    """Parse command line, request new certs, clean up old ones."""
+    config = parse_command_line(args)
+    configure_logger(logger, config.log_level.upper())
     all_domains = get_all_domains(config)
     request_new_certs(config, all_domains)
     clean_up_certs(config, all_domains)

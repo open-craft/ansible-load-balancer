@@ -25,5 +25,9 @@ if [ -f "$HAPROXY_RELOAD_FILE" -o "$1" = "-f" ]; then
     } > {{ LOAD_BALANCER_BACKEND_MAP }}
     # Dump server state before restart
     echo "show servers state" | socat /run/haproxy/admin.sock - > {{ LOAD_BALANCER_STATE_FILE }}
-    flock -w 1 {{ LOAD_BALANCER_CERTS_DIR }} systemctl reload haproxy
+    if ! flock -w 1 {{ LOAD_BALANCER_CERTS_DIR }} systemctl reload haproxy; then
+        # If the restart failed, show useful debugging information that will get included
+        # in the error email send by cron.
+        systemctl status haproxy
+    fi
 fi
