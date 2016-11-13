@@ -24,47 +24,20 @@
     - load-balancer
 
   tasks:
-    - name: copy load-balancer configuration fragment to the server
-      copy:
-        content: |
-          backend be-load-balancer-test
-              server srv-pydoc 127.0.0.1:5000
-        dest: /tmp/config-fragment
-    - name: copy load-balancer backend map fragment to the server
-      copy:
-        content: "{{ TEST_DOMAIN }} be-load-balancer-test\n"
-        dest: /tmp/backend-map-fragment
-    - name: apply the new configuration
-      command: haproxy-config apply test /tmp/config-fragment /tmp/backend-map-fragment
-    - name: wait for the certificate to be available
-      wait_for:
-        path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
-        timeout: 360
-    - name: wait for haproxy to be restarted
-      wait_for:
-        path: "{{ LOAD_BALANCER_RELOAD_FILE }}"
-        timeout: 100
-        state: absent
     - name: start pydoc as test backend on the server
       become: False
       command: nohup pydoc -p 5000
-      async: 45
+      async: 600
       poll: 0
-    - name: verify that the backend is accessible via HTTPS
-      become: False
-      local_action: >
-        command wget -O- --ca-certificate=../files/lets-encrypt-fake-cert.crt \
-              "https://{{ TEST_DOMAIN }}/"
-    - name: Remove configuration fragments again
-      command: haproxy-config remove test
-    - name: Wait for the certificate to be deleted again
-      wait_for:
-        path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
-        timeout: 360
-        state: absent
-    - name: Re-apply the backend configuration
-      command: haproxy-config apply test /tmp/config-fragment /tmp/backend-map-fragment
-    - name: wait for the certificate to be available again
-      wait_for:
-        path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
-        timeout: 360
+    - include: test_configuration.yml
+      vars:
+        config_fragment: |
+          backend be-load-balancer-test
+              server srv-pydoc 127.0.0.1:5000
+        backend_map_fragment: "{{ TEST_DOMAIN }} be-load-balancer-test\n"
+    - include: test_configuration.yml
+      vars:
+        config_fragment: |
+          backend be-load-balancer-test
+              server srv-pydoc 127.0.0.1:5000
+        backend_map_fragment: "{{ TEST_DOMAIN|upper }} be-load-balancer-test\n"
