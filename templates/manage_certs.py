@@ -29,7 +29,7 @@ logger = logging.getLogger()  # pylint: disable=invalid-name
 def get_all_domains(config):
     """Get a list of all configured domains from the haproxy backend map."""
     domains = collections.OrderedDict()
-    with open(config.haproxy_backend_map) as backend_map:
+    with config.haproxy_backend_map.open() as backend_map:
         for line in backend_map:
             line = line.strip()
             if line and not line.startswith("#"):
@@ -232,7 +232,7 @@ def parse_command_line(args):
     """Parse the command-line arguments."""
     parser = ArgumentParser(fromfile_prefix_chars="@")
     parser.add_argument("--server-ip", required=True)
-    parser.add_argument("--haproxy-backend-map", required=True)
+    parser.add_argument("--haproxy-backend-map", required=True, type=pathlib.Path)
     parser.add_argument("--haproxy-certs-dir", required=True, type=pathlib.Path)
     parser.add_argument("--contact-email", required=True)
     parser.add_argument("--letsencrypt-use-staging", action="store_true")

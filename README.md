@@ -63,8 +63,12 @@ To add a new backend, perform the following steps:
 
         haproxy-config remove <fragment_name>
 
-Running the integration test playbook
--------------------------------------
+Running the tests
+-----------------
+
+To run the unit tests, change to the `tests/` subdirectory and run
+
+    PYTHONPATH=../templates python3 -m unittest test_manage_certs.py
 
 You can run the integration test playbook in `tests/integration.yml` against a
 server with a vanilla Ubuntu 16.04 image.  You need at least one DNS name
