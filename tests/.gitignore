@@ -1,1 +1,3 @@
 *.retry
+venv-unit-tests/
+venv-integration-tests/
