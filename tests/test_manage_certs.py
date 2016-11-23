@@ -1,9 +1,5 @@
+# -*- coding: utf-8 -*-
 """Unit tests for the manage_certs.py script."""
-
-# To run the tests:
-#   PYTHONPATH=../templates python3 -m unittest test_manage_certs.py
-# To lint:
-#   PYTHONPATH=../templates pylint3 --max-line-length=120 --disable=missing-docstring --reports=n test_manage_certs.py
 
 import argparse
 import collections
@@ -36,8 +32,10 @@ class TestManageCerts(unittest.TestCase):
             "\n"
             "some.domain.name be-corresponding-backend\n"
             "  weird-whitespace.domain.name \t be-corresponding-backend  \n"
+            # We want to make sure that upper-case domain names get converted to lower case...
             "UPPERCASE.domain.name be-corresponding-backend\n"
             "different.backend.domain be-differenct-backend\n"
+            # ...but uppercase backend names will not be modified in any way.
             "yet.another.backend.domain be-UPPERCASE-backend\n"
         )
         all_domains = manage_certs.get_all_domains(self.config)
@@ -47,18 +45,18 @@ class TestManageCerts(unittest.TestCase):
     @mock.patch("manage_certs.has_valid_cert")
     def test_get_certless_domains(self, fake_has_valid_cert, fake_has_valid_dns_record):
         fake_has_valid_dns_record.side_effect = [
-            True,  # some.domain.name
-            False, # weird-whitespace.domain.name
-            True,  # uppercase.domain.name
-            True,  # different.backend.domain
-            False, # yet.another.backend.domain
+            True,   # some.domain.name
+            False,  # weird-whitespace.domain.name
+            True,   # uppercase.domain.name
+            True,   # different.backend.domain
+            False,  # yet.another.backend.domain
         ]
         fake_has_valid_cert.side_effect = [
-            True,  # some.domain.name
-            True,  # weird-whitespace.domain.name
-            True,  # uppercase.domain.name
-            False, # different.backend.domain
-            False, # yet.another.backend.domain
+            True,   # some.domain.name
+            True,   # weird-whitespace.domain.name
+            True,   # uppercase.domain.name
+            False,  # different.backend.domain
+            False,  # yet.another.backend.domain
         ]
         with self.assertLogs(manage_certs.logger, logging.DEBUG) as logs:
             certless_domains = manage_certs.get_certless_domains(self.config, ALL_DOMAINS)

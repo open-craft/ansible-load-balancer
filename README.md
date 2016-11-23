@@ -66,19 +66,23 @@ To add a new backend, perform the following steps:
 Running the tests
 -----------------
 
+To lint the Python code, run
+
+    make test_prospector
+
 To run the unit tests, change to the `tests/` subdirectory and run
 
-    make unit_tests
+    make test_unit
 
 To run the integration test playbook in `tests/integration.yml`, you need a
 server with a vanilla Ubuntu 16.04 image, and at least one DNS name pointing to
 that server.  DNS changes should already have propagated.  The run
 
-    make integration_tests TEST_DOMAIN=test.server.domain
+    make test_integration TEST_DOMAIN=test.server.domain
 
 from the `tests/` subdirectory. Replace test.server.domain with the DNS name of
 your test server.
 
-To lint the Python code, run
+All tests can be run using
 
-    make lint
+    make test TEST_DOMAIN=test.server.domain

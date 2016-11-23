@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# For linting, use `pylint3 --disable=I --reports=n manage_certs.py`.
 """Certificate management for haproxy load balancing server.
 
 This script is intended to be run as a cron job on a frequent basis.  It scans
@@ -105,7 +104,7 @@ def get_certless_domains(config, all_domains):
 
 
 def request_cert(config, domains):
-    """Request a new SSL certificate for the listed domains"""
+    """Request a new SSL certificate for the listed domains."""
     command = [
         "letsencrypt", "certonly",
         "--email", config.contact_email,
