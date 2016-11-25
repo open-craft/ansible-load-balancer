@@ -22,7 +22,7 @@ import sys
 import OpenSSL.crypto
 
 
-logger = logging.getLogger()  # pylint: disable=invalid-name
+logger = logging.getLogger()
 
 
 def get_all_domains(config):
@@ -160,7 +160,7 @@ def get_dns_names(cert):
         ext = cert.get_extension(i)
         if ext.get_short_name() == b"subjectAltName":
             dns_names = []
-            for component in ext._subjectAltNameString().split(", "):  # pylint: disable=protected-access
+            for component in ext._subjectAltNameString().split(", "):
                 name_type, name = component.split(":", 1)
                 if name_type == "DNS":
                     dns_names.append(name.lower())

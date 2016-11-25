@@ -21,11 +21,13 @@ ALL_DOMAINS = collections.OrderedDict([
 
 
 class TestManageCerts(unittest.TestCase):
+    """Unit tests for some of the certificate management functions."""
 
     def setUp(self):
         self.config = argparse.Namespace()
 
     def test_get_all_domain(self):
+        """Test that get_all_domains() parses a backend map correctly."""
         self.config.haproxy_backend_map = mock.MagicMock()
         self.config.haproxy_backend_map.open.return_value.__enter__.return_value = io.StringIO(
             "# This is a comment.\n"
@@ -44,6 +46,7 @@ class TestManageCerts(unittest.TestCase):
     @mock.patch("manage_certs.has_valid_dns_record")
     @mock.patch("manage_certs.has_valid_cert")
     def test_get_certless_domains(self, fake_has_valid_cert, fake_has_valid_dns_record):
+        """Test the logic and logging in get_certless_domains()."""
         fake_has_valid_dns_record.side_effect = [
             True,   # some.domain.name
             False,  # weird-whitespace.domain.name
@@ -77,6 +80,7 @@ class TestManageCerts(unittest.TestCase):
     @mock.patch("manage_certs.get_certless_domains")
     @mock.patch("manage_certs.request_cert")
     def test_request_new_certs(self, fake_request_cert, fake_get_certless_domains):
+        """Test that new certs are requested for the correct domain groups."""
         fake_get_certless_domains.return_value = list(ALL_DOMAINS)
         manage_certs.request_new_certs(self.config, ALL_DOMAINS)
         self.assertCountEqual(fake_request_cert.call_args_list, [

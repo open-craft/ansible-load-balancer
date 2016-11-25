@@ -13,12 +13,7 @@ venv-integration-tests: integration_test_requirements.txt
 	touch "$@"
 
 test_prospector: venv-unit-tests
-	venv-unit-tests/bin/prospector \
-	    --strictness veryhigh \
-	    --test-warnings \
-	    --member-warnings \
-	    --full-pep8 \
-	    --max-line-length=120 \
+	venv-unit-tests/bin/prospector --no-autodetect \
 	    ../templates/manage_certs.py test_manage_certs.py
 
 test_unit: venv-unit-tests
@@ -35,7 +30,13 @@ test_integration: venv-integration-tests
 	fi
 	venv-integration-tests/bin/ansible-playbook -vvv -i "$(TEST_DOMAIN)", integration.yml
 
+update_prospector_config:
+	wget -O pylintrc \
+	    'https://raw.githubusercontent.com/open-craft/opencraft/master/pylintrc'
+	wget -O prospector.yml \
+	    'https://raw.githubusercontent.com/open-craft/opencraft/master/.prospector/opencraft.yml'
+
 clean:
 	git clean -Xdf
 
-.PHONY: default test test_prospector test_unit test_integration clean
+.PHONY: default test test_prospector test_unit test_integration clean update_prospector_config
