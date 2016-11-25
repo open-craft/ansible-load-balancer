@@ -1,6 +1,9 @@
 machine:
   python:
     version: 3.5.2
+  environment:
+    ANSIBLE_REMOTE_USER: ubuntu
+    TEST_DOMAIN: haproxy-integration-test.net.opencraft.hosting
 test:
   override:
-    - cd tests && make
+    - cd tests && make test
