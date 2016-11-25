@@ -1,5 +1,3 @@
-*.retry
+integration/*.retry
 .coverage
 htmlcov/
-venv-unit-tests/
-venv-integration-tests/
