@@ -3,6 +3,7 @@ machine:
     version: 3.5.2
   environment:
     ANSIBLE_REMOTE_USER: ubuntu
+    PYTHON27: /opt/circleci/python/2.7.12/bin/python
     TEST_DOMAIN: haproxy-integration-test.net.opencraft.hosting
 test:
   override:

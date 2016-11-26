@@ -1,14 +1,14 @@
+PYTHON27 ?= $(shell which python2.7)
+PYTHON35 ?= $(shell which python3.5)
+
 default: test_prospector test_unit
 
 test: test_prospector test_unit test_integration
 
-venv/unit: unit/requirements.txt
-	virtualenv -p "`which python3`" "$@"
-	"$@"/bin/pip install -r "$<"
-	touch "$@"
-
-venv/integration: integration/requirements.txt
-	virtualenv "$@"
+venv/unit: PYTHON = $(PYTHON35)
+venv/integration: PYTHON = $(PYTHON27)
+venv/%: %/requirements.txt
+	virtualenv -p "$(PYTHON)" "$@"
 	"$@"/bin/pip install -r "$<"
 	touch "$@"
 
