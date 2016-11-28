@@ -81,7 +81,7 @@
     name: "Request new certificates when needed and remove unused ones"
     job: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
     cron_file: manage-certs
-    minute: "*/5"
+    minute: "*/{{ LOAD_BALANCER_MANAGE_CERTS_INTERVAL }}"
     user: root
 
 - name: set up cron job for certificate renewal

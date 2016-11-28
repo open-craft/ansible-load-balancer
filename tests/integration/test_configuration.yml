@@ -1,0 +1,33 @@
+---
+
+- name: copy load-balancer configuration fragment to the server
+  copy:
+    content: "{{ config_fragment }}"
+    dest: /tmp/config-fragment
+- name: copy load-balancer backend map fragment to the server
+  copy:
+    content: "{{ backend_map_fragment }}"
+    dest: /tmp/backend-map-fragment
+- name: apply the new configuration
+  command: haproxy-config apply test /tmp/config-fragment /tmp/backend-map-fragment
+- name: wait for the certificate to be available
+  wait_for:
+    path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
+    timeout: 180
+- name: wait for haproxy to be restarted
+  wait_for:
+    path: "{{ LOAD_BALANCER_RELOAD_FILE }}"
+    timeout: 100
+    state: absent
+- name: verify that the backend is accessible via HTTPS
+  become: False
+  local_action: >
+    command wget -O- --ca-certificate=../files/lets-encrypt-fake-cert.crt \
+          "https://{{ TEST_DOMAIN }}/"
+- name: Remove configuration fragments again
+  command: haproxy-config remove test
+- name: Wait for the certificate to be deleted again
+  wait_for:
+    path: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
+    timeout: 180
+    state: absent

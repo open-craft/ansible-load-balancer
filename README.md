@@ -63,21 +63,26 @@ To add a new backend, perform the following steps:
 
         haproxy-config remove <fragment_name>
 
-Running the integration test playbook
--------------------------------------
+Running the tests
+-----------------
 
-You can run the integration test playbook in `tests/integration.yml` against a
-server with a vanilla Ubuntu 16.04 image.  You need at least one DNS name
-pointing at the server, and DNS changes should already have propagated.
+To lint the Python code, run
 
-1. Create a Python virtualenv and activate it.
+    make test_prospector
 
-2. Change to the `tests/` directory and run `pip install -r requirements.txt` to
-   install Ansible and further required packages.
+To run the unit tests, change to the `tests/` subdirectory and run
 
-3. Run the playbook using
+    make test_unit
 
-        ansible-playbook -vvv -i test.server.domain, integration.yml
+To run the integration test playbook in `tests/integration.yml`, you need a
+server with a vanilla Ubuntu 16.04 image, and at least one DNS name pointing to
+that server.  DNS changes should already have propagated.  The run
 
-   Replace test.server.domain by the DNS name of your test server, but make sure
-   to keep the trailing comma.
+    make test_integration TEST_DOMAIN=test.server.domain
+
+from the `tests/` subdirectory. Replace test.server.domain with the DNS name of
+your test server.
+
+All tests can be run using
+
+    make test TEST_DOMAIN=test.server.domain

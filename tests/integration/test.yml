@@ -1,0 +1,52 @@
+---
+
+- name: Install Python 2
+  hosts: all
+  gather_facts: false
+  tasks:
+    - raw: "[ -e /usr/bin/pyton ] || sudo apt-get update -qq && sudo apt-get install -qq python"
+
+- name: Integration test for the load-balancer role
+  hosts: all
+  become: true
+  vars:
+    TEST_DOMAIN: "{{ inventory_hostname }}"
+    LETSENCRYPT_USE_STAGING: true
+    LOAD_BALANCER_MANAGE_CERTS_LOG_LEVEL: debug
+    LOAD_BALANCER_MANAGE_CERTS_INTERVAL: 2
+
+  pre_tasks:
+    - assert:
+        that: "lookup('dig', ansible_host) == lookup('dig', TEST_DOMAIN)"
+        msg: "The DNS entry for {{ TEST_DOMAIN }} must point to the test server."
+
+  roles:
+    - load-balancer
+
+  tasks:
+    - name: clean up certificate data from previous integration test runs
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
+        - "{{ LETSENCRYPT_ARCHIVE_DIR }}/{{ TEST_DOMAIN }}"
+        - "/etc/letsencrypt/live/{{ TEST_DOMAIN }}"
+        - "/etc/letsencrypt/renewal/{{ TEST_DOMAIN }}.conf"
+    - name: start pydoc as test backend on the server
+      become: False
+      command: nohup pydoc -p 5000
+      async: 3600
+      poll: 0
+    - include: test_configuration.yml
+      vars:
+        config_fragment: |
+          backend be-load-balancer-test
+              server srv-pydoc 127.0.0.1:5000
+        backend_map_fragment: "{{ TEST_DOMAIN }} be-load-balancer-test\n"
+    - include: test_configuration.yml
+      vars:
+        config_fragment: |
+          backend be-load-balancer-test
+              server srv-pydoc 127.0.0.1:5000
+        backend_map_fragment: "{{ TEST_DOMAIN|upper }} be-load-balancer-test\n"

@@ -33,7 +33,7 @@ inotifywait -e close_write -e moved_to -e delete -m -q -r \
     while read path event file; do
         case "$path" in
             {{ LETSENCRYPT_ARCHIVE_DIR }}/*)
-                if [ "$event" != "delete" ]; then
+                if [ "$event" != "DELETE" ]; then
                     update_cert "$path" "$file"
                 fi
                 ;;

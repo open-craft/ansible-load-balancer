@@ -18,8 +18,10 @@ case "$1" in
         fragment_name="$2"
         conf_fragment="$3"
         map_fragment="$4"
-        flock -s "{{ LOAD_BALANCER_CONF_DIR }}" cp "$conf_fragment" "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name"
-        flock -s "{{ LOAD_BALANCER_BACKENDS_DIR }}" cp "$map_fragment" "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
+        flock -s "{{ LOAD_BALANCER_CONF_DIR }}" \
+              cp "$conf_fragment" "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name"
+        flock -s "{{ LOAD_BALANCER_BACKENDS_DIR }}" \
+              awk '{print tolower($1) " " $2}' "$map_fragment" > "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
         ;;
     remove)
         if [ "$#" != 2 ]; then

@@ -13,6 +13,7 @@ import argparse
 import collections
 import logging.handlers
 import pathlib
+import shutil
 import socket
 import ssl
 import subprocess
@@ -27,12 +28,12 @@ logger = logging.getLogger()
 def get_all_domains(config):
     """Get a list of all configured domains from the haproxy backend map."""
     domains = collections.OrderedDict()
-    with open(config.haproxy_backend_map) as backend_map:
+    with config.haproxy_backend_map.open() as backend_map:
         for line in backend_map:
             line = line.strip()
             if line and not line.startswith("#"):
                 domain, backend = line.split(None, 1)
-                domains[domain] = backend
+                domains[domain.lower()] = backend
     return domains
 
 
@@ -50,7 +51,7 @@ get_ssl_context.ctx = None
 
 def has_valid_cert(config, domain, ctx=None):
     """Verify that localhost serves a valid SSL certificate for the given domain."""
-    # The easiest and most reliable way to determin whether we have a valid
+    # The easiest and most reliable way to determine whether we have a valid
     # certificate for a given hostname is to connect to haproxy on port 443 and
     # transfer the hostname we want to enquire about in the SNI extension.
     # Python's SSL implementation verifies whether the certificate is valid and
@@ -103,7 +104,7 @@ def get_certless_domains(config, all_domains):
 
 
 def request_cert(config, domains):
-    """Request a new SSL certificate for the listed domains"""
+    """Request a new SSL certificate for the listed domains."""
     command = [
         "letsencrypt", "certonly",
         "--email", config.contact_email,
@@ -113,7 +114,8 @@ def request_cert(config, domains):
         "--non-interactive",
         "--agree-tos",
         "--keep",
-        "--expand"
+        "--expand",
+        "--force-renew",
     ]
     if config.letsencrypt_use_staging:
         command.append("--staging")
@@ -158,14 +160,14 @@ def get_dns_names(cert):
         ext = cert.get_extension(i)
         if ext.get_short_name() == b"subjectAltName":
             dns_names = []
-            for component in ext._subjectAltNameString().split(", "):  # pylint: disable=protected-access
+            for component in ext._subjectAltNameString().split(", "):
                 name_type, name = component.split(":", 1)
                 if name_type == "DNS":
-                    dns_names.append(name)
+                    dns_names.append(name.lower())
             return dns_names
     for label, value in cert.get_subject().get_components():
         if label == b"CN":
-            return [value.decode("utf8")]
+            return [value.decode("utf8").lower()]
     raise ValueError("the certificate does not contain a valid Common Name, "
                      "nor valid Subject Alternative Names")
 
@@ -178,9 +180,12 @@ def remove_cert(cert_path):
         cert_path,
     )
     cert_path.unlink()
-    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", cert_path.stem + ".conf")
+    domain = cert_path.stem
+    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", domain + ".conf")
     if renewal_config.is_file():
-        renewal_config.rename(renewal_config.with_suffix(".disabled"))
+        renewal_config.unlink()
+    shutil.rmtree("/etc/letsencrypt/live/" + domain, ignore_errors=True)
+    shutil.rmtree("/etc/letsencrypt/archive/" + domain, ignore_errors=True)
 
 
 def clean_up_certs(config, all_domains):
@@ -203,6 +208,17 @@ def clean_up_certs(config, all_domains):
             remove_cert(cert_path)
 
 
+def configure_logger(logger_, log_level):
+    """Configure the logger to log to the syslog with the given log level."""
+    logger_.setLevel(log_level)
+    handler = logging.handlers.SysLogHandler(address='/dev/log')
+    handler.setFormatter(logging.Formatter("%(filename)s: %(message)s"))
+    logger_.addHandler(handler)
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.ERROR)
+    logger_.addHandler(stderr_handler)
+
+
 class ArgumentParser(argparse.ArgumentParser):
     """Argument parser with more useful config file syntax."""
 
@@ -211,24 +227,24 @@ class ArgumentParser(argparse.ArgumentParser):
         return arg_line.split()
 
 
-def main(args=sys.argv[1:]):
-    """Parse configuration and perform actions."""
+def parse_command_line(args):
+    """Parse the command-line arguments."""
     parser = ArgumentParser(fromfile_prefix_chars="@")
     parser.add_argument("--server-ip", required=True)
-    parser.add_argument("--haproxy-backend-map", required=True)
+    parser.add_argument("--haproxy-backend-map", required=True, type=pathlib.Path)
     parser.add_argument("--haproxy-certs-dir", required=True, type=pathlib.Path)
     parser.add_argument("--contact-email", required=True)
     parser.add_argument("--letsencrypt-use-staging", action="store_true")
     parser.add_argument("--letsencrypt-fake-cert")
     parser.add_argument("--log-level", default="info")
     parser.add_argument("--keep-certificate", action="append")
-    config = parser.parse_args(args)
+    return parser.parse_args(args)
 
-    logger.setLevel(config.log_level.upper())
-    handler = logging.handlers.SysLogHandler(address='/dev/log')
-    handler.setFormatter(logging.Formatter("%(filename)s: %(message)s"))
-    logger.addHandler(handler)
 
+def main(args=sys.argv[1:]):
+    """Parse command line, request new certs, clean up old ones."""
+    config = parse_command_line(args)
+    configure_logger(logger, config.log_level.upper())
     all_domains = get_all_domains(config)
     request_new_certs(config, all_domains)
     clean_up_certs(config, all_domains)

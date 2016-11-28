@@ -31,3 +31,6 @@ LETSENCRYPT_FAKE_CERT: /etc/ssl/certs/letsencrypt-fake-cert.crt
 LOAD_BALANCER_MANAGE_CERTS_CONF: /etc/manage_certs.conf
 LOAD_BALANCER_MANAGE_CERTS_LOG_LEVEL: info
 LOAD_BALANCER_SNAKE_OIL_CERT: ssl-cert-snakeoil.pem
+
+# The interval between invocations of manage_certs.py in minutes.
+LOAD_BALANCER_MANAGE_CERTS_INTERVAL: 5
