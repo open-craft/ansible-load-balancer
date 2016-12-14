@@ -173,17 +173,27 @@ def get_dns_names(cert):
 
 
 def remove_cert(cert_path):
-    """Delete the certificate pointed to by the path, and deactivate renewal."""
+    """Delete the certificate pointed to by the path, and deactivate renewal.
+
+    Only certificates with a Let's Encrypt renewal configuration are removed,
+    since we want to keep certificates that have been manually added.
+    """
+    domain = cert_path.stem
+    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", domain + ".conf")
+    if not renewal_config.is_file():
+        logger.info(
+            "The certificate %s is not used by any active backend domain.  "
+            "However, there is no Let's Encrypt configuration for it, so it is "
+            "not automatically removed."
+        )
+        return
     logger.info(
         "The certificate %s is not used by any active backend domain.  "
         "It is removed and the renewal configuration is disabled.",
         cert_path,
     )
     cert_path.unlink()
-    domain = cert_path.stem
-    renewal_config = pathlib.Path("/etc/letsencrypt/renewal", domain + ".conf")
-    if renewal_config.is_file():
-        renewal_config.unlink()
+    renewal_config.unlink()
     shutil.rmtree("/etc/letsencrypt/live/" + domain, ignore_errors=True)
     shutil.rmtree("/etc/letsencrypt/archive/" + domain, ignore_errors=True)
 

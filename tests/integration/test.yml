@@ -33,6 +33,11 @@
         - "{{ LETSENCRYPT_ARCHIVE_DIR }}/{{ TEST_DOMAIN }}"
         - "/etc/letsencrypt/live/{{ TEST_DOMAIN }}"
         - "/etc/letsencrypt/renewal/{{ TEST_DOMAIN }}.conf"
+    - name: create copy of snake oil certificate
+      copy:
+        src: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ LOAD_BALANCER_SNAKE_OIL_CERT }}"
+        dest: "{{ LOAD_BALANCER_CERTS_DIR }}/snakeoil-copy.pem"
+        remote_src: True
     - name: start pydoc as test backend on the server
       become: False
       command: nohup pydoc -p 5000
@@ -50,3 +55,15 @@
           backend be-load-balancer-test
               server srv-pydoc 127.0.0.1:5000
         backend_map_fragment: "{{ TEST_DOMAIN|upper }} be-load-balancer-test\n"
+    - name: stat the snake oil certificate and its copy
+      stat:
+        path: "{{ item }}"
+      register: snake_oil_certs
+      with_items:
+        - "{{ LOAD_BALANCER_CERTS_DIR }}/{{ LOAD_BALANCER_SNAKE_OIL_CERT }}"
+        - "{{ LOAD_BALANCER_CERTS_DIR }}/snakeoil-copy.pem"
+    - name: verify that the snake oil certificate and its copy still exist
+      # They should not be deleted because they were not issued by Let's Encrypt
+      assert:
+        that: item.stat.exists
+      with_items: "{{ snake_oil_certs.results }}"
