@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# This script watches for new SSL certificates and installs them to haproxy.
+
+inotifywait -e create -m -q -r {{ LETSENCRYPT_LIVE_DIR }} |
+    while read path event file; do
+        case "$file" in
+            fullchain*)
+                # A new certificate was obtained by letsencrypt, either due to periodic
+                # renewal or because a new domain was added.  Letsencrypt writes four .pem
+                # files for each certificate.  We wait for the last one, fullchain.pem, to
+                # be created before taking action.
+                domain="${path#{{ LETSENCRYPT_LIVE_DIR }}/}"
+                domain="${domain%/}"
+                cd "{{ LETSENCRYPT_LIVE_DIR }}/$domain"
+                # Haproxy expects the certificate and the private key concatenated
+                # together to a single .pem file.  We lock the certs directory to protect
+                # against haproxy reading a half-written certificate.
+                sleep 20
+                flock {{ LOAD_BALANCER_CERTS_DIR }} cat fullchain.pem privkey.pem \
+                      > "{{ LOAD_BALANCER_CERTS_DIR }}/$domain.pem"
+                ;;
+        esac
+    done

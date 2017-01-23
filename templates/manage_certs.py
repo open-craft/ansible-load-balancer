@@ -184,7 +184,8 @@ def remove_cert(cert_path):
         logger.info(
             "The certificate %s is not used by any active backend domain.  "
             "However, there is no Let's Encrypt configuration for it, so it is "
-            "not automatically removed."
+            "not automatically removed.",
+            cert_path,
         )
         return
     logger.info(

@@ -14,6 +14,7 @@
     - "{{ LOAD_BALANCER_CONF_DIR }}"
     - "{{ LOAD_BALANCER_BACKENDS_DIR }}"
     - "{{ LETSENCRYPT_ARCHIVE_DIR }}"
+    - "{{ LETSENCRYPT_LIVE_DIR }}"
 
 - name: copy haproxy configuration main section
   template:
@@ -48,6 +49,7 @@
     dest: "/usr/local/sbin/{{ item }}"
     mode: "0755"
   with_items:
+    - cert-watcher
     - haproxy-config
     - haproxy-config-watcher
     - haproxy-reload
@@ -58,16 +60,21 @@
     src: manage_certs.conf
     dest: "{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
 
-- name: copy config watcher systemd service file
+- name: copy config and cert watcher systemd service files
   template:
-    src: haproxy-config-watcher.service
-    dest: /lib/systemd/system/haproxy-config-watcher.service
-
-- name: enable and start config watcher
-  command: systemctl {{ item }} haproxy-config-watcher
+    src: "{{ item }}"
+    dest: "/lib/systemd/system/{{ item }}"
   with_items:
-    - enable
-    - restart
+    - haproxy-config-watcher.service
+    - cert-watcher.service
+
+- name: enable and start config and cert watcher
+  # The systemd module is only available in Ansible 2.2 or later, so we need to
+  # use command here.
+  command: systemctl {{ item | join(" ") }}
+  with_nested:
+    - ["enable", "restart"]
+    - ["haproxy-config-watcher", "cert-watcher"]
 
 - name: set up cron job to reload haproxy when needed
   cron:
@@ -93,7 +100,7 @@
     # port 443 being in use.  (Seems to be a bug in certbot.)
     job: letsencrypt renew --standalone-supported-challenges http-01 --http-01-port 8080
     hour: "*/12"
-    minute: "?"
+    minute: 42
     cron_file: letsencrypt-renew
     user: root
 

@@ -31,7 +31,7 @@
       with_items:
         - "{{ LOAD_BALANCER_CERTS_DIR }}/{{ TEST_DOMAIN }}.pem"
         - "{{ LETSENCRYPT_ARCHIVE_DIR }}/{{ TEST_DOMAIN }}"
-        - "/etc/letsencrypt/live/{{ TEST_DOMAIN }}"
+        - "{{ LETSENCRYPT_LIVE_DIR }}/{{ TEST_DOMAIN }}"
         - "/etc/letsencrypt/renewal/{{ TEST_DOMAIN }}.conf"
     - name: create copy of snake oil certificate
       copy:
