@@ -65,7 +65,7 @@ def has_valid_cert(config, domain, ctx=None):
     conn = ctx.wrap_socket(socket.socket(socket.AF_INET), server_hostname=domain)
     try:
         conn.connect(("localhost", 443))
-    except ssl.SSLError:
+    except (ssl.SSLError, ssl.CertificateError):
         return False
     else:
         return True
