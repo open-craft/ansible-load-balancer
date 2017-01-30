@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# This script watches for new SSL certificates and installs them to haproxy.
+
+install_cert() {
+    # Certbot behaves differently when renewing a certificate as opposed to
+    # obtaining one for the first time.  The only way I've found to make sure
+    # all files are fully written is to wait some time before actually
+    # installing the certificate.
+    sleep 10
+    cd "{{ LETSENCRYPT_LIVE_DIR }}/$1"
+    # Haproxy expects the certificate and the private key concatenated
+    # together to a single .pem file.  We lock the certs directory to protect
+    # against haproxy reading a half-written certificate.
+    flock {{ LOAD_BALANCER_CERTS_DIR }} cat fullchain.pem privkey.pem \
+          > "{{ LOAD_BALANCER_CERTS_DIR }}/$1.pem"
+}
+
+inotifywait -e create -m -q -r {{ LETSENCRYPT_LIVE_DIR }} |
+    while read path event file; do
+        case "$file" in
+            fullchain*)
+                # A new certificate was obtained by letsencrypt, either due to periodic
+                # renewal or because a new domain was added.  Letsencrypt writes four .pem
+                # files for each certificate.  We wait for the last one, fullchain.pem, to
+                # be created before taking action.
+                domain="${path#{{ LETSENCRYPT_LIVE_DIR }}/}"
+                domain="${domain%/}"
+                install_cert "$domain" &
+                ;;
+        esac
+    done

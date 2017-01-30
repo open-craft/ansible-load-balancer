@@ -14,6 +14,7 @@ LOAD_BALANCER_CERTS_DIR: /etc/haproxy/certs
 LOAD_BALANCER_CONF_DIR: /etc/haproxy/conf.d
 LOAD_BALANCER_BACKENDS_DIR: /etc/haproxy/backends
 LETSENCRYPT_ARCHIVE_DIR: /etc/letsencrypt/archive
+LETSENCRYPT_LIVE_DIR: /etc/letsencrypt/live
 LOAD_BALANCER_BACKEND_MAP: /etc/haproxy/backend.map
 
 # Path of file used as indicator that haproxy needs to be reloaded.
