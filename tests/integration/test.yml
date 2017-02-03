@@ -4,7 +4,7 @@
   hosts: all
   gather_facts: false
   tasks:
-    - raw: "[ -e /usr/bin/pyton ] || sudo apt-get update -qq && sudo apt-get install -qq python"
+    - raw: "[ -e /usr/bin/python ] || sudo apt-get update -qq && sudo apt-get install -qq python"
 
 - name: Integration test for the load-balancer role
   hosts: all

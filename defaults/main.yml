@@ -1,4 +1,4 @@
-LOAD_BALANCER_SERVER_IP: "{{ lookup('dig', ansible_host) }}"
+LOAD_BALANCER_SERVER_IP: "{{ ansible_host }}"
 
 LOAD_BALANCER_OPS_EMAIL: ops@example.com
 

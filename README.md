@@ -76,13 +76,18 @@ To run the unit tests, change to the `tests/` subdirectory and run
 
 To run the integration test playbook in `tests/integration.yml`, you need a
 server with a vanilla Ubuntu 16.04 image, and at least one DNS name pointing to
-that server.  DNS changes should already have propagated.  The run
+that server.  DNS changes should already have propagated.
 
-    make test_integration TEST_DOMAIN=test.server.domain
+Create an inventory file containing your test server's hostname and IP address, e.g.,
 
-from the `tests/` subdirectory. Replace test.server.domain with the DNS name of
-your test server.
+    test.server.domain ansible_host=123.45.67.89
+
+Then, from the `tests/` subdirectory, run:
+
+    make test_integration TEST_HOSTS=hosts.test
+
+Replace hosts.test with the path to the inventory file for your test server.
 
 All tests can be run using
 
-    make test TEST_DOMAIN=test.server.domain
+    make test TEST_HOSTS=hosts.test
