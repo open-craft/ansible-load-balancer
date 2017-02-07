@@ -119,3 +119,7 @@
 
 - name: restart haproxy
   command: /usr/local/sbin/haproxy-reload -f
+
+# Ensures that haproxy logs to /var/log
+- name: restart rsyslog
+  service: name=rsyslog state=restarted
