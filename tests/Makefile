@@ -23,12 +23,12 @@ test_unit: venv/unit
 	venv/unit/bin/coverage report
 
 test_integration: venv/integration
-	@if [ -z "$(TEST_DOMAIN)" ]; then \
-	    echo "Please set TEST_DOMAIN to the domain name of the test server:"; \
-	    echo "    make $@ TEST_DOMAIN=test.server.domain"; \
+	@if [ -z "$(TEST_HOSTS)" ]; then \
+	    echo "Please set TEST_HOSTS to the inventory file for the test server:"; \
+	    echo "    make $@ TEST_hosts=hosts"; \
 	    false; \
 	fi
-	venv/integration/bin/ansible-playbook -vvv -i "$(TEST_DOMAIN)", integration/test.yml
+	venv/integration/bin/ansible-playbook -vvv -i "$(TEST_HOSTS)" integration/test.yml
 
 update_prospector_config:
 	wget -O pylintrc \

@@ -1,3 +1,7 @@
+- assert:
+    that: LOAD_BALANCER_SERVER_IP | ipaddr
+    msg: "The LOAD_BALANCER_SERVER_IP variable must be an IP address, not a domain name."
+
 - name: install apt packages
   apt:
     name: "{{ item }}"
@@ -115,3 +119,7 @@
 
 - name: restart haproxy
   command: /usr/local/sbin/haproxy-reload -f
+
+# Ensures that haproxy logs to /var/log
+- name: restart rsyslog
+  service: name=rsyslog state=restarted

@@ -4,7 +4,7 @@ machine:
   environment:
     ANSIBLE_REMOTE_USER: ubuntu
     PYTHON27: /opt/circleci/python/2.7.12/bin/python
-    TEST_DOMAIN: haproxy-integration-test.net.opencraft.hosting
+    TEST_HOSTS: integration/hosts
 test:
   override:
     - cd tests && make test
