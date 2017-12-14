@@ -7,7 +7,7 @@
 # It is important to note that haproxy.conf and backend.map are not contained
 # in any of the watched directories, since these files are regenerated upon
 # restart.  Otherwise each restart would immediately trigger another restart.
-inotifywait -e close_write -e moved_to -e delete -m -q -r \
+inotifywait -e close_write -e move -e delete -m -q -r \
             {{ LOAD_BALANCER_CERTS_DIR }} {{ LOAD_BALANCER_CONF_DIR }} \
             {{ LOAD_BALANCER_BACKENDS_DIR }} |
     while read path event file; do
