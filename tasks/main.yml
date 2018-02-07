@@ -108,6 +108,52 @@
     cron_file: letsencrypt-renew
     user: root
 
+- name: Install maintenance backend config
+  template:
+    src: haproxy-maintenance-backends.conf
+    dest: "{{ LOAD_BALANCER_CONF_DIR }}/01-maintenance"
+
+- name: Ensure that {{ MAINTENANCE_SERVER_STATIC_ROOT }} exists
+  file:
+    path: "{{ MAINTENANCE_SERVER_STATIC_ROOT }}"
+    owner: www-data
+    group: www-data
+    state: directory
+
+- name: Install Nginx
+  apt:
+    name: nginx
+  ignore_errors: yes # Port 80 which is used by the default Nginx config is
+                     # already used by HAProxy. This causes a configuration
+                     # error during installation.
+
+- name: Remove default nginx config
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Copy Nginx site configuration
+  template:
+    src: nginx-maintenance.conf
+    dest: /etc/nginx/sites-available/maintenance
+
+- name: Enable Nginx config
+  file:
+    src: /etc/nginx/sites-available/maintenance
+    dest: /etc/nginx/sites-enabled/maintenance
+    state: link
+
+- name: Install maintenance content
+  git:
+    repo: "{{ MAINTENANCE_PAGES_REPO }}"
+    dest: "{{ MAINTENANCE_SERVER_STATIC_ROOT }}/default"
+
+- name: Enable Nginx service and restart
+  service:
+    name: nginx
+    enabled: yes
+    state: restarted
+
 - name: open HTTP and HTTPS port on the firewall
   ufw:
     rule: allow
