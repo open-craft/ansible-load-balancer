@@ -71,6 +71,7 @@
   with_items:
     - haproxy-config-watcher.service
     - cert-watcher.service
+    - haproxy.service
 
 - name: enable and start config and cert watcher
   # The systemd module is only available in Ansible 2.2 or later, so we need to
