@@ -1,0 +1,34 @@
+[Unit]
+Description=HAProxy Load Balancer
+Documentation=man:haproxy(1)
+Documentation=file:/usr/share/doc/haproxy/configuration.txt.gz
+After=network.target syslog.service
+Wants=syslog.service
+
+[Service]
+Environment=CONFIG=/etc/haproxy/haproxy.cfg
+EnvironmentFile=-/etc/default/haproxy
+ExecStartPre=/usr/sbin/haproxy -f ${CONFIG} -c -q
+ExecStart=/usr/sbin/haproxy-systemd-wrapper -f ${CONFIG} -p /run/haproxy.pid $EXTRAOPTS
+ExecReload=/usr/sbin/haproxy -c -f ${CONFIG}
+ExecReload=/bin/kill -USR1 $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+# The ExecReload kill command uses SIGUSR2 in the default config.
+# 
+# According to the documentation, SIGUSR1 causes a graceful stop of existing 
+# processes.  Once the processes stop, new processes are started to take on 
+# new requests.  
+#
+# SIGUSR2 is intended to be sent to the master process in master-worker mode, 
+# and restarts the worker processes without starting a new master process.
+# 
+# Currently SIGUSR2 is not causing any processes to be collected in production,
+# though it does seem to work on haproxy-dev.
+#
+# Further documentation can be found at:
+# https://www.haproxy.com/documentation/hapee/1-6r2/traffic-management/start-stop-haproxy/
