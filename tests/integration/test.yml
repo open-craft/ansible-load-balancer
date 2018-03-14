@@ -8,7 +8,7 @@
 
 - name: Write the host key to known hosts
   connection: local
-  shell: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+  command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
 
 - name: Integration test for the load-balancer role
   hosts: all
