@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.5.2
+      - image: circleci/python:3.5.4
         environment:
           ANSIBLE_REMOTE_USER: ubuntu
           PYTHON27: /opt/circleci/python/2.7.12/bin/python
