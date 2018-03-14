@@ -5,13 +5,12 @@ jobs:
       - image: circleci/python:3.5.4
         environment:
           ANSIBLE_REMOTE_USER: ubuntu
-          PYTHON27: /opt/circleci/python/2.7.12/bin/python
           TEST_HOSTS: integration/hosts
     steps:
       - checkout
       - run:
-          command: |
-            sudo pip install virtualenv
+        command: |
+          sudo pip install virtualenv
       - run:
           name: Run tests
           command: cd tests && make test
