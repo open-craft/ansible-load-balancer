@@ -6,10 +6,6 @@
   tasks:
     - raw: "[ -e /usr/bin/python ] || sudo apt-get update -qq && sudo apt-get install -qq python"
 
-- name: Write the host key to known hosts
-  connection: local
-  command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
-
 - name: Integration test for the load-balancer role
   hosts: all
   become: true
@@ -28,6 +24,9 @@
     - load-balancer
 
   tasks:
+    - name: Write the host key to known hosts
+      connection: local
+      command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
     - name: clean up certificate data from previous integration test runs
       file:
         path: "{{ item }}"
