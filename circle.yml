@@ -1,10 +1,14 @@
-machine:
-  python:
-    version: 3.5.2
-  environment:
-    ANSIBLE_REMOTE_USER: ubuntu
-    PYTHON27: /opt/circleci/python/2.7.12/bin/python
-    TEST_HOSTS: integration/hosts
-test:
-  override:
-    - cd tests && make test
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.5.2
+        environment:
+          ANSIBLE_REMOTE_USER: ubuntu
+          PYTHON27: /opt/circleci/python/2.7.12/bin/python
+          TEST_HOSTS: integration/hosts
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          command: cd tests && make test
