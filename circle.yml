@@ -9,8 +9,9 @@ jobs:
     steps:
       - checkout
       - run:
-          command: |
-            sudo pip install virtualenv
+          command: apt-get update && apt-get install -y python-dev
+      - run:
+          command: sudo pip install virtualenv
       - run:
           name: Run tests
           command: cd tests && make test
