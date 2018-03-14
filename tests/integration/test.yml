@@ -1,5 +1,10 @@
 ---
 
+- name: Write the host key to known hosts
+  connection: local
+  tasks:
+      - command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+
 - name: Install Python 2
   hosts: all
   gather_facts: false
@@ -24,9 +29,6 @@
     - load-balancer
 
   tasks:
-    - name: Write the host key to known hosts
-      connection: local
-      command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
     - name: clean up certificate data from previous integration test runs
       file:
         path: "{{ item }}"
