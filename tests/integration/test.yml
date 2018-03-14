@@ -1,6 +1,7 @@
 ---
 
 - name: Write the host key to known hosts
+  hosts: 127.0.0.1
   connection: local
   tasks:
       - command: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
