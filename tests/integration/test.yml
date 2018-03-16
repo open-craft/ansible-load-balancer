@@ -17,7 +17,7 @@
 
   pre_tasks:
     - assert:
-        that: "lookup('dig', ansible_host) == lookup('dig', TEST_DOMAIN)"
+        that: "ansible_host == lookup('dig', TEST_DOMAIN)"
         msg: "The DNS entry for {{ TEST_DOMAIN }} must point to the test server."
 
   roles:

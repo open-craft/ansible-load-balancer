@@ -22,7 +22,7 @@
 - name: verify that the backend is accessible via HTTPS
   become: False
   local_action: >
-    command wget -O- --ca-certificate=../files/lets-encrypt-fake-cert.crt \
+    command wget -O- --ca-certificate=../../files/lets-encrypt-fake-cert.crt \
           "https://{{ TEST_DOMAIN }}/"
 - name: Remove configuration fragments again
   command: haproxy-config remove test
