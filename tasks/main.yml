@@ -2,6 +2,16 @@
     that: LOAD_BALANCER_SERVER_IP | ipaddr
     msg: "The LOAD_BALANCER_SERVER_IP variable must be an IP address, not a domain name."
 
+- name: add HAProxy PPA
+  apt_repository:
+    repo: "{{ HAPROXY_PPA }}"
+  when: HAPROXY_PPA != ""
+
+- name: install HAProxy
+  apt:
+    name: haproxy={{ HAPROXY_VERSION }}
+    state: present
+
 - name: install apt packages
   apt:
     name: "{{ item }}"
