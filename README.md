@@ -32,6 +32,33 @@ Features
   reload of haproxy.  Reloads use haproxy's graceful reload feature and are
   rate-limited to once per minute.
 
+Architecture notes
+------------------
+
+Here's a summary what happens when a client updates a configuration fragment:
+
+* A client (e.g. Ocim) generates a configuration fragment and a backend map,
+  which are copied to the load balancing server via Ansible.
+
+* On the haproxy server, there is a daemon called haproxy-configuration-watcher,
+  which is watching for changes to the configuration fragments.  Whenever
+  changes are detected, new versions of the configuration file and the backend
+  map are generated from all the fragments, and haproxy is asked to reload its
+  configuration.  (I skipped some details here – in fact the
+  haproxy-configuration-watcher only creates a marker file, which is then seen
+  by a cron job that is run once per minute.  This indirection was put in place
+  as a precaution to prevent too frequent haproxy restarts.)
+
+* The haproxy server runs a cron job every 5 minutes to detect whether it holds
+  valid certificates for all domains listed in the backend map.  If a
+  certificate is missing, it will automatically re-request one from Let's
+  Encrypt.
+
+* Another daemon called haproxy-cert-watcher will notice the new certificate,
+  concatenate the relevant files and put them in the haproxy configuration
+  directory, which in turn triggers a reload of haproxy via the
+  haproxy-configuration-watcher.
+
 Adding backends
 ---------------
 
