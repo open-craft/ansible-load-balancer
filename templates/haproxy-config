@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Apply or remove an haproxy configuration fragment.
+# Each application will cause etckeeper to commit any changes.
 
 usage()
 {
@@ -22,6 +23,9 @@ case "$1" in
               cp "$conf_fragment" "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name"
         flock -s "{{ LOAD_BALANCER_BACKENDS_DIR }}" \
               awk '{print tolower($1) " " $2}' "$map_fragment" > "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
+        if [ -x "$(command -v etckeeper)" ]; then
+            etckeeper commit 'Auto-commit after "haproxy-config apply".'
+        fi
         ;;
     remove)
         if [ "$#" != 2 ]; then
