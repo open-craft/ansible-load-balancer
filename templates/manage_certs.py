@@ -12,6 +12,7 @@ removes them and disables the associated Let's Encrypt renewal configuration.
 import argparse
 import collections
 import logging.handlers
+import itertools
 import pathlib
 import shutil
 import socket
@@ -27,7 +28,9 @@ logger = logging.getLogger()
 
 def get_all_domains(config):
     """Get a list of all configured domains from the haproxy backend map."""
-    domains = collections.OrderedDict()
+    # Use integers as dummy backend IDs for the additional domains, to ensure they can
+    # never collide with actual backend names.
+    domains = collections.OrderedDict(zip(config.additional_domain, itertools.count()))
     with config.haproxy_backend_map.open() as backend_map:
         for line in backend_map:
             line = line.strip()
@@ -249,6 +252,7 @@ def parse_command_line(args):
     parser.add_argument("--letsencrypt-fake-cert")
     parser.add_argument("--log-level", default="info")
     parser.add_argument("--keep-certificate", action="append")
+    parser.add_argument("--additional-domain", action="append")
     return parser.parse_args(args)
 
 
