@@ -1,4 +1,5 @@
 LOAD_BALANCER_SERVER_IP: "{{ ansible_host }}"
+LOAD_BALANCER_MAIN_DOMAIN: "{{ inventory_hostname }}"
 
 LOAD_BALANCER_OPS_EMAIL: ops@example.com
 

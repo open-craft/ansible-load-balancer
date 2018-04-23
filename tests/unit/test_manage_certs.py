@@ -12,6 +12,7 @@ import manage_certs
 
 
 ALL_DOMAINS = collections.OrderedDict([
+    ("main.server.domain", 0),
     ("some.domain.name", "be-corresponding-backend"),
     ("weird-whitespace.domain.name", "be-corresponding-backend"),
     ("uppercase.domain.name", "be-corresponding-backend"),
@@ -26,7 +27,7 @@ class TestManageCerts(unittest.TestCase):
     def setUp(self):
         self.config = argparse.Namespace()
 
-    def test_get_all_domain(self):
+    def test_get_all_domains(self):
         """Test that get_all_domains() parses a backend map correctly."""
         self.config.haproxy_backend_map = mock.MagicMock()
         self.config.haproxy_backend_map.open.return_value.__enter__.return_value = io.StringIO(
@@ -40,6 +41,7 @@ class TestManageCerts(unittest.TestCase):
             # ...but uppercase backend names will not be modified in any way.
             "yet.another.backend.domain be-UPPERCASE-backend\n"
         )
+        self.config.additional_domain = ["main.server.domain"]
         all_domains = manage_certs.get_all_domains(self.config)
         self.assertEqual(all_domains, ALL_DOMAINS)
 
@@ -48,6 +50,7 @@ class TestManageCerts(unittest.TestCase):
     def test_get_certless_domains(self, fake_has_valid_cert, fake_has_valid_dns_record):
         """Test the logic and logging in get_certless_domains()."""
         fake_has_valid_dns_record.side_effect = [
+            True,   # main.server.domain
             True,   # some.domain.name
             False,  # weird-whitespace.domain.name
             True,   # uppercase.domain.name
@@ -55,6 +58,7 @@ class TestManageCerts(unittest.TestCase):
             False,  # yet.another.backend.domain
         ]
         fake_has_valid_cert.side_effect = [
+            True,   # main.server.domain
             True,   # some.domain.name
             True,   # weird-whitespace.domain.name
             True,   # uppercase.domain.name
@@ -65,6 +69,8 @@ class TestManageCerts(unittest.TestCase):
             certless_domains = manage_certs.get_certless_domains(self.config, ALL_DOMAINS)
         self.assertEqual(certless_domains, ["different.backend.domain"])
         self.assertEqual(logs.output, [
+            'DEBUG:root:The DNS record for the domain main.server.domain points to this server.',
+            'DEBUG:root:This server has a valid cert for the domain main.server.domain.',
             'DEBUG:root:The DNS record for the domain some.domain.name points to this server.',
             'DEBUG:root:This server has a valid cert for the domain some.domain.name.',
             'DEBUG:root:The DNS record for the domain weird-whitespace.domain.name does not point to this server.',
@@ -84,6 +90,7 @@ class TestManageCerts(unittest.TestCase):
         fake_get_certless_domains.return_value = list(ALL_DOMAINS)
         manage_certs.request_new_certs(self.config, ALL_DOMAINS)
         self.assertCountEqual(fake_request_cert.call_args_list, [
+            mock.call(self.config, ['main.server.domain']),
             mock.call(self.config, ['some.domain.name', 'weird-whitespace.domain.name', 'uppercase.domain.name']),
             mock.call(self.config, ['different.backend.domain']),
             mock.call(self.config, ['yet.another.backend.domain']),

@@ -164,4 +164,11 @@
 
 # Ensures that haproxy logs to /var/log
 - name: restart rsyslog
-  service: name=rsyslog state=restarted
+  service:
+    name: rsyslog
+    state: restarted
+
+# Ensure that the certificate for the main domain name of the server is created
+# immediately.  It's needed by the role to install the node exporter.
+- name: run certificate management script
+  command: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"

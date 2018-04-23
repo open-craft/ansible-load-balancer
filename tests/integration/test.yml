@@ -11,6 +11,9 @@
   become: true
   vars:
     TEST_DOMAIN: "{{ inventory_hostname }}"
+    # To be able to test that the test domain is properly deleted, we need to
+    # set the main domain to a fake value.
+    LOAD_BALANCER_MAIN_DOMAIN: non-existent.domain
     LETSENCRYPT_USE_STAGING: true
     LOAD_BALANCER_MANAGE_CERTS_LOG_LEVEL: debug
     LOAD_BALANCER_MANAGE_CERTS_INTERVAL: 2
