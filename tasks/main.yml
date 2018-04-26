@@ -10,13 +10,10 @@
 - name: install HAProxy
   apt:
     name: haproxy={{ HAPROXY_VERSION }}
-    state: present
 
 - name: install apt packages
   apt:
-    name: "{{ item }}"
-    state: present
-  with_items: "{{ LOAD_BALANCER_APT_PACKAGES }}"
+    name: "{{ LOAD_BALANCER_APT_PACKAGES }}"
 
 - name: create haproxy configuration directories
   file:
@@ -83,12 +80,14 @@
     - cert-watcher.service
 
 - name: enable and start config and cert watcher
-  # The systemd module is only available in Ansible 2.2 or later, so we need to
-  # use command here.
-  command: systemctl {{ item | join(" ") }}
-  with_nested:
-    - ["enable", "restart"]
-    - ["haproxy-config-watcher", "cert-watcher"]
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+    name: "{{ item }}"
+  with_items:
+    - haproxy-config-watcher
+    - cert-watcher
 
 - name: set up cron job to reload haproxy when needed
   cron:
