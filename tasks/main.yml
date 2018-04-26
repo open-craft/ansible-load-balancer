@@ -47,6 +47,8 @@
   shell: >
     cat /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key \
         > {{ LOAD_BALANCER_CERTS_DIR }}/{{ LOAD_BALANCER_SNAKE_OIL_CERT }}
+  args:
+    creates: "{{ LOAD_BALANCER_CERTS_DIR }}/{{ LOAD_BALANCER_SNAKE_OIL_CERT }}"
 
 - name: copy letsencrypt staging certificate for testing purposes
   copy:
@@ -171,3 +173,5 @@
 # immediately.  It's needed by the role to install the node exporter.
 - name: run certificate management script
   command: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
+  args:
+    creates: "/etc/letsencrypt/live/{{ LOAD_BALANCER_MAIN_DOMAIN }}"
