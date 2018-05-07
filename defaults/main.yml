@@ -24,8 +24,6 @@ LOAD_BALANCER_BACKEND_MAP: /etc/haproxy/backend.map
 # Path of file used as indicator that haproxy needs to be reloaded.
 LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
 
-LOAD_BALANCER_STATE_FILE: /tmp/haproxy-server-state
-
 # Whether to use the Let's Encrypt staging server to get certificates.  Enable
 # this for testing to save resources.  The issued certificates won't be
 # accepted by browsers.
