@@ -26,6 +26,7 @@
     - "{{ LOAD_BALANCER_BACKENDS_DIR }}"
     - "{{ LETSENCRYPT_ARCHIVE_DIR }}"
     - "{{ LETSENCRYPT_LIVE_DIR }}"
+    - "{{ LETSENCRYPT_DELETION_MARK_DIR }}"
 
 - name: copy haproxy configuration main section
   template:
@@ -63,6 +64,7 @@
     mode: "0755"
   with_items:
     - cert-watcher
+    - cert_deleter.py
     - haproxy-config
     - haproxy-config-watcher
     - haproxy-reload
@@ -117,6 +119,14 @@
     hour: "*/12"
     minute: 42
     cron_file: letsencrypt-renew
+    user: root
+
+- name: set up cron job for certificate removal
+  cron:
+    name: "Remove LetsEncrypt certificates that were marked for removal"
+    job: /usr/local/sbin/cert_deleter.py {{ LETSENCRYPT_DELETION_MARK_DIR }}
+    special_time: hourly
+    cron_file: cert-deleter
     user: root
 
 - name: Install maintenance backend config
