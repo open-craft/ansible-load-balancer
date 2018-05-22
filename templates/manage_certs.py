@@ -175,7 +175,7 @@ def get_dns_names(cert):
                      "nor valid Subject Alternative Names")
 
 
-def remove_cert(cert_path):
+def mark_cert_for_removal(config, cert_path):
     """Delete the certificate pointed to by the path, and deactivate renewal.
 
     Only certificates with a Let's Encrypt renewal configuration are removed,
@@ -193,17 +193,14 @@ def remove_cert(cert_path):
         return
     logger.info(
         "The certificate %s is not used by any active backend domain.  "
-        "It is removed and the renewal configuration is disabled.",
+        "It has been marked for removal.",
         cert_path,
     )
-    cert_path.unlink()
-    renewal_config.unlink()
-    shutil.rmtree("/etc/letsencrypt/live/" + domain, ignore_errors=True)
-    shutil.rmtree("/etc/letsencrypt/archive/" + domain, ignore_errors=True)
+    (config.letsencrypt_deletion_mark_dir / domain).touch()
 
 
 def clean_up_certs(config, all_domains):
-    """Remove old certificate files from /etc/letsencrypt."""
+    """Marks certificate files from /etc/letsencrypt for deletion if necessary."""
     active_domains = set(all_domains)
     for cert_path in config.haproxy_certs_dir.glob("*.pem"):
         if cert_path.name in config.keep_certificate:
@@ -218,8 +215,8 @@ def clean_up_certs(config, all_domains):
             # Contains a wildcard.  Not from Let's Encrypt, so we don't touch it.
             continue
         if dns_names.isdisjoint(active_domains):
-            # Certificate does not serve any active domains, so we can remove it.
-            remove_cert(cert_path)
+            # Certificate does not serve any active domains, so we can mark it for removal.
+            mark_cert_for_removal(config, cert_path)
 
 
 def configure_logger(logger_, log_level):
@@ -247,6 +244,7 @@ def parse_command_line(args):
     parser.add_argument("--server-ip", required=True)
     parser.add_argument("--haproxy-backend-map", required=True, type=pathlib.Path)
     parser.add_argument("--haproxy-certs-dir", required=True, type=pathlib.Path)
+    parser.add_argument("--letsencrypt-deletion-mark-dir", required=True, type=pathlib.Path)
     parser.add_argument("--contact-email", required=True)
     parser.add_argument("--letsencrypt-use-staging", action="store_true")
     parser.add_argument("--letsencrypt-fake-cert")

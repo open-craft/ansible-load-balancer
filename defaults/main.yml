@@ -24,6 +24,10 @@ LOAD_BALANCER_BACKEND_MAP: /etc/haproxy/backend.map
 # Path of file used as indicator that haproxy needs to be reloaded.
 LOAD_BALANCER_RELOAD_FILE: /tmp/haproxy-needs-reload
 
+# Path of folder used to store file markers for domains whose
+# LetsEncrypt cert needs to be deleted.
+LETSENCRYPT_DELETION_MARK_DIR: /tmp/letsencrypt-marked-for-removal
+
 # Whether to use the Let's Encrypt staging server to get certificates.  Enable
 # this for testing to save resources.  The issued certificates won't be
 # accepted by browsers.
