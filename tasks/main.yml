@@ -1,3 +1,5 @@
+---
+
 - assert:
     that: LOAD_BALANCER_SERVER_IP | ipaddr
     msg: "The LOAD_BALANCER_SERVER_IP variable must be an IP address, not a domain name."
@@ -175,3 +177,33 @@
   command: "/usr/local/sbin/manage_certs.py @{{ LOAD_BALANCER_MANAGE_CERTS_CONF }}"
   args:
     creates: "/etc/letsencrypt/live/{{ LOAD_BALANCER_MAIN_DOMAIN }}"
+
+- name: Install Prometheus HAProxy exporter
+  when: HAPROXY_EXPORTER_ENABLED
+  block:
+
+    - name: Download HAProxy exporter
+      unarchive:
+        src: "{{ HAPROXY_EXPORTER_DOWNLOAD_URL }}"
+        remote_src: yes
+        dest: /opt
+        creates: "{{ HAPROXY_EXPORTER_BINARY }}"
+
+    - name: Copy HAProxy exporter service definition
+      template:
+        src: haproxy-exporter.service.j2
+        dest: /etc/systemd/system/haproxy-exporter.service
+
+    - name: Start HAProxy exporter
+      systemd:
+        daemon-reload: yes
+        name: haproxy-exporter.service
+        state: started
+        enabled: yes
+
+    - name: Create Consul service definition file
+      copy:
+        content: "{{ HAPROXY_EXPORTER_CONSUL_SERVICE | to_nice_json }}"
+        dest: /etc/consul/haproxy-exporter.json
+      notify:
+        - reload consul
