@@ -1,3 +1,5 @@
+---
+
 LOAD_BALANCER_SERVER_IP: "{{ ansible_host }}"
 LOAD_BALANCER_MAIN_DOMAIN: "{{ inventory_hostname }}"
 
@@ -45,3 +47,22 @@ MAINTENANCE_UNSCHEDULED_SERVER_PORT: "{{ MAINTENANCE_SERVER_PORT + 2 }}"
 MAINTENANCE_PROVISIONING_SERVER_PORT: "{{ MAINTENANCE_SERVER_PORT + 3 }}"
 MAINTENANCE_SERVER_STATIC_ROOT: /var/www/maintenance
 MAINTENANCE_PAGES_REPO: "https://github.com/open-craft/maintenance-pages"
+
+# PROMETHEUS ##################################################################
+
+HAPROXY_EXPORTER_ENABLED: false
+HAPROXY_EXPORTER_VERSION: 0.9.0
+HAPROXY_EXPORTER_BASENAME: "haproxy_exporter-{{ HAPROXY_EXPORTER_VERSION }}.linux-amd64"
+HAPROXY_EXPORTER_BINARY: "/opt/{{ HAPROXY_EXPORTER_BASENAME }}/haproxy_exporter"
+HAPROXY_EXPORTER_ARCHIVE: "{{ HAPROXY_EXPORTER_BASENAME }}.tar.gz"
+HAPROXY_EXPORTER_DOWNLOAD_URL: "https://github.com/prometheus/haproxy_exporter/releases/download/v{{ HAPROXY_EXPORTER_VERSION }}/{{ HAPROXY_EXPORTER_ARCHIVE }}"
+HAPROXY_EXPORTER_PASSWORD: null
+
+HAPROXY_EXPORTER_CONSUL_SERVICE:
+  service:
+    name: haproxy-exporter
+    tags:
+      - haproxy-exporter
+      - monitor-https
+    port: 19101
+    enable_tag_override: true
