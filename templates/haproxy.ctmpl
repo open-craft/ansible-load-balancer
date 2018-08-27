@@ -1,0 +1,22 @@
+# This file is auto-generated. Any manual edits will be overwritten.
+
+{{ file "/etc/consul-template/templates/haproxy.cfg" }}
+
+{{- $prefix := "/ocim/instances" }}
+{{- range nodes }}
+{{- $path := (printf "%v@%v" $prefix .Datacenter) }}
+{{ range $ocim_id, $pairs := tree $path | byKey }}
+{{- $server_name := (index $pairs "name").Value | replaceAll " " "_" | toLower }}
+{{- $http_auth_info_base64 := (index $pairs "basic_auth").Value }}
+{{- $active_app_servers := (index $pairs "active_app_servers").Value | parseJSON }}
+{{ $health_check := (index $pairs "health_checks_enabled").Value | parseBool }}
+# Backend configuration for {{ $server_name }}
+cookie openedx-backend insert postonly indirect
+acl has-authorization req.hdr(Authorization) -m found
+http-request set-header Authorization 'Basic {{ $http_auth_info_base64 }}' unless has-authorization
+option httpchk /heartbeat
+{{- range $active_app_servers }}
+server {{ $server_name }} {{ .public_ip }}:80 cookie {{ $server_name }} {{ if $health_check }}check{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
