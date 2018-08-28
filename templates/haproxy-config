@@ -23,8 +23,11 @@ case "$1" in
               cp "$conf_fragment" "{{ LOAD_BALANCER_CONF_DIR }}/$fragment_name"
         flock -s "{{ LOAD_BALANCER_BACKENDS_DIR }}" \
               awk '{print tolower($1) " " $2}' "$map_fragment" > "{{ LOAD_BALANCER_BACKENDS_DIR }}/$fragment_name"
-        if [ -x "$(command -v etckeeper)" ]; then
-            etckeeper commit 'Auto-commit after "haproxy-config apply".'
+        if [ -x "$(command -v etckeeper)" ] && etckeeper unclean; then
+            for i in 1 2 3; do
+                etckeeper commit 'Auto-commit after "haproxy-config apply".' && break
+                sleep 5
+            done
         fi
         ;;
     remove)
@@ -38,3 +41,4 @@ case "$1" in
         usage
         ;;
 esac
+exit 0
