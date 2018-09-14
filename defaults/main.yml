@@ -48,6 +48,10 @@ MAINTENANCE_PROVISIONING_SERVER_PORT: "{{ MAINTENANCE_SERVER_PORT + 3 }}"
 MAINTENANCE_SERVER_STATIC_ROOT: /var/www/maintenance
 MAINTENANCE_PAGES_REPO: "https://github.com/open-craft/maintenance-pages"
 
+# CERT MANAGER ################################################################
+
+CERT_MANAGER_ENDPOINT: ""
+
 # PROMETHEUS ##################################################################
 
 HAPROXY_EXPORTER_ENABLED: false
