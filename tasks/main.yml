@@ -179,15 +179,15 @@
     creates: "/etc/letsencrypt/live/{{ LOAD_BALANCER_MAIN_DOMAIN }}"
 
 - name: Install Prometheus HAProxy exporter
-  when: HAPROXY_EXPORTER_ENABLED
+  when: haproxy_exporter_enabled
   block:
 
     - name: Download HAProxy exporter
       unarchive:
-        src: "{{ HAPROXY_EXPORTER_DOWNLOAD_URL }}"
+        src: "{{ haproxy_exporter_download_url }}"
         remote_src: yes
         dest: /opt
-        creates: "{{ HAPROXY_EXPORTER_BINARY }}"
+        creates: "{{ haproxy_exporter_binary }}"
 
     - name: Copy HAProxy exporter service definition
       template:
@@ -203,7 +203,7 @@
 
     - name: Create Consul service definition file
       copy:
-        content: "{{ HAPROXY_EXPORTER_CONSUL_SERVICE | to_nice_json }}"
+        content: "{{ haproxy_exporter_consul_service | to_nice_json }}"
         dest: /etc/consul/haproxy-exporter.json
       notify:
         - reload consul
