@@ -3,7 +3,7 @@ Description=Prometheus HAProxy Exporter
 After=network-online.target
 
 [Service]
-ExecStart={{ HAPROXY_EXPORTER_BINARY }} --web.listen-address 127.0.0.1:9101 --haproxy.scrape-uri=unix:/run/haproxy/admin.sock
+ExecStart={{ haproxy_exporter_binary }} --web.listen-address 127.0.0.1:9101 --haproxy.scrape-uri=unix:/run/haproxy/admin.sock
 Restart=always
 RestartSec=10
 
