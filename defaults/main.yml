@@ -66,3 +66,6 @@ haproxy_exporter_consul_service:
       - monitor-https
     port: 19101
     enable_tag_override: true
+
+# Unbound #####################################################################
+caching_resolver_enabled: false
