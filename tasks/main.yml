@@ -115,7 +115,7 @@
     # reuses the parameters used when a certificate was issued for the last time.
     # However, not passing in the port results in letsencrypt complaining about
     # port 443 being in use.  (Seems to be a bug in certbot.)
-    job: letsencrypt renew --standalone-supported-challenges http-01 --http-01-port 8080
+    job: "letsencrypt renew --preferred-challenges http-01 --http-01-port 8080 >/dev/null 2>&1"
     hour: "*/12"
     minute: 42
     cron_file: letsencrypt-renew
