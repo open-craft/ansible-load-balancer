@@ -1,6 +1,14 @@
 Ansible role for an haproxy-based load balancing server
 =======================================================
 
+NOTICE
+------
+
+This repository was superseeded by the `load-balancer-v2` role in https://github.com/open-craft/ansible-playbooks and is now archived.
+
+Description
+-----------
+
 This role deploys haproxy configured as a load balancer for multiple domains,
 possibly with multiple servers for each domain name.  It allows dynamic
 reconfiguration of backends, and is intended to be used with the OpenCraft
